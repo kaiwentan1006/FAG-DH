@@ -353,6 +353,8 @@ public:
 	[[nodiscard]] rpl::producer<not_null<ViewElement*>> viewResizeRequest() const;
 	void requestItemViewRefresh(not_null<const HistoryItem*> item);
 	[[nodiscard]] rpl::producer<not_null<const HistoryItem*>> itemViewRefreshRequest() const;
+	void requestItemViewsRefresh(
+		Fn<bool(not_null<const HistoryItem*>)> filter);
 	void requestItemTextRefresh(not_null<HistoryItem*> item);
 	void requestUnreadReactionsAnimation(not_null<HistoryItem*> item);
 	void notifyHistoryUnloaded(not_null<const History*> history);

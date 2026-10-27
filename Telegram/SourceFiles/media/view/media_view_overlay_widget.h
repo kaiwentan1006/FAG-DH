@@ -396,6 +396,7 @@ private:
 		const StartStreaming &startStreaming = StartStreaming());
 	void displayFinished(anim::activation activation);
 	void redisplayContent();
+	[[nodiscard]] bool contentBlurredLocally() const;
 	void findCurrent();
 
 	void updateCursor();

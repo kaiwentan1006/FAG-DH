@@ -197,6 +197,9 @@ const std::map<QString, Definition, std::greater<QString>> DefinitionMap {
 	{ "mark_read_after_action", {
 		.type = SettingType::BoolSetting,
 		.defaultValue = false, }},
+	{ "hide_membership_messages", {
+		.type = SettingType::BoolSetting,
+		.defaultValue = false, }},
 
 	//   Media blur
 	{ "blur_photos", {

@@ -6212,6 +6212,16 @@ void HistoryItem::setServiceMessageByAction(const MTPmessageAction &action) {
 }
 
 void HistoryItem::applyAction(const MTPMessageAction &action) {
+	action.match([&](const MTPDmessageActionChatAddUser &) {
+		AddComponents(HistoryServiceMembership::Bit());
+	}, [&](const MTPDmessageActionChatJoinedByLink &) {
+		AddComponents(HistoryServiceMembership::Bit());
+	}, [&](const MTPDmessageActionChatJoinedByRequest &) {
+		AddComponents(HistoryServiceMembership::Bit());
+	}, [&](const MTPDmessageActionChatDeleteUser &) {
+		AddComponents(HistoryServiceMembership::Bit());
+	}, [](const auto &) {
+	});
 	action.match([&](const MTPDmessageActionChatAddUser &data) {
 		if (const auto channel = _history->peer->asMegagroup()) {
 			const auto selfUserId = _history->session().userId();

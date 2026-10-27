@@ -754,6 +754,11 @@ struct HistoryServiceCustomLink
 	ClickHandlerPtr link;
 };
 
+// Service messages about members joining or leaving a group.
+struct HistoryServiceMembership
+: RuntimeComponent<HistoryServiceMembership, HistoryItem> {
+};
+
 struct HistoryServicePaymentRefund
 : RuntimeComponent<HistoryServicePaymentRefund, HistoryItem> {
 	ClickHandlerPtr link;

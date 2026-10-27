@@ -172,4 +172,27 @@ void Paint(
 	p.drawImage(area, image);
 }
 
+QImage BlurImage(QImage image) {
+	if (image.isNull()) {
+		return image;
+	}
+	const auto ratio = image.devicePixelRatio();
+	const auto size = image.size();
+	const auto downscale = FASettings::JsonSettings::GetInt(
+		u"blur_strength"_q);
+	auto small = image.scaled(
+		std::max(size.width() / downscale, 1),
+		std::max(size.height() / downscale, 1),
+		Qt::IgnoreAspectRatio,
+		Qt::SmoothTransformation
+	).convertToFormat(QImage::Format_ARGB32_Premultiplied);
+	small = Images::Blur(std::move(small));
+	auto result = small.scaled(
+		size,
+		Qt::IgnoreAspectRatio,
+		Qt::SmoothTransformation);
+	result.setDevicePixelRatio(ratio);
+	return result;
+}
+
 } // namespace FAMediaBlur

@@ -85,6 +85,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "main/main_account.h"
 #include "main/main_domain.h" // Domain::activeSessionValue.
 #include "main/main_session.h"
+#include "fa/data/fa_local_store.h"
+#include "fa/ui/fa_media_blur.h"
 #include "main/main_session_settings.h"
 #include "layout/layout_document_generic_preview.h"
 #include "platform/platform_overlay_widget.h"
@@ -555,6 +557,24 @@ OverlayWidget::OverlayWidget()
 			}
 			return false;
 		});
+
+		// Above the chat window handler, which would toggle the message
+		// under the cursor behind the viewer.
+		constexpr auto kOverChatWindow = 1;
+		if (!isHidden() && isActive() && _message && _session) {
+			request->check(
+				Shortcuts::Command::ToggleMediaBlur,
+				kOverChatWindow
+			) && request->handle([=] {
+				if (!_message || !_session) {
+					return false;
+				}
+				_session->faLocalStore().toggleMediaBlur(
+					_message->fullId());
+				redisplayContent();
+				return true;
+			});
+		}
 	}, lifetime());
 
 	setupWindow();
@@ -1207,6 +1227,9 @@ void OverlayWidget::setStaticContent(QImage image) {
 	image.setDevicePixelRatio(style::DevicePixelRatio());
 	if (_flip) {
 		image = image.mirrored(_flip & Qt::Horizontal, _flip & Qt::Vertical);
+	}
+	if (contentBlurredLocally()) {
+		image = FAMediaBlur::BlurImage(std::move(image));
 	}
 	_staticContent = std::move(image);
 	_staticContentTransparent = IsSemitransparent(_staticContent);
@@ -3652,7 +3675,9 @@ void OverlayWidget::displayPhoto(
 	refreshMediaViewer();
 
 	_staticContent = QImage();
-	if (!_stories && _photo->videoCanBePlayed()) {
+	if (!_stories
+		&& _photo->videoCanBePlayed()
+		&& !contentBlurredLocally()) {
 		initStreaming();
 	}
 
@@ -3687,6 +3712,12 @@ void OverlayWidget::destroyThemePreview() {
 	_themeApply.destroy();
 	_themeCancel.destroy();
 	_themeShare.destroy();
+}
+
+bool OverlayWidget::contentBlurredLocally() const {
+	return _message
+		&& !_stories
+		&& FAMediaBlur::IsItemMediaBlurred(_message);
 }
 
 void OverlayWidget::redisplayContent() {
@@ -3732,8 +3763,11 @@ void OverlayWidget::displayDocument(
 			}
 		} else {
 			initSponsoredButton();
-			if (_documentMedia->canBePlayed(_message)
-				&& initStreaming(startStreaming)) {
+			const auto playable = _documentMedia->canBePlayed(_message);
+			if (playable && contentBlurredLocally()) {
+				// Blurred videos show a blurred cover until unblurred.
+				initStreamingThumbnail();
+			} else if (playable && initStreaming(startStreaming)) {
 			} else if (_document->isVideoFile()) {
 				_documentMedia->automaticLoad(fileOrigin(), _message);
 				initStreamingThumbnail();
@@ -5871,6 +5905,13 @@ void OverlayWidget::setSession(not_null<Main::Session*> session) {
 	session->downloaderTaskFinished(
 	) | rpl::start_with_next([=] {
 		if (!isHidden()) {
+			if (_document
+				&& !_streamed
+				&& _staticContent.isNull()
+				&& contentBlurredLocally()) {
+				initStreamingThumbnail();
+				update();
+			}
 			updateControls();
 			checkForSaveLoaded();
 		}

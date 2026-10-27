@@ -2019,6 +2019,20 @@ rpl::producer<not_null<const HistoryItem*>> Session::itemViewRefreshRequest() co
 	return _itemViewRefreshRequest.events();
 }
 
+void Session::requestItemViewsRefresh(
+		Fn<bool(not_null<const HistoryItem*>)> filter) {
+	// Refreshing re-creates views, so _views can't be iterated meanwhile.
+	auto items = std::vector<not_null<const HistoryItem*>>();
+	for (const auto &[item, views] : _views) {
+		if (filter(item)) {
+			items.push_back(item);
+		}
+	}
+	for (const auto item : items) {
+		requestItemViewRefresh(item);
+	}
+}
+
 void Session::notifyItemDataChange(not_null<HistoryItem*> item) {
 	_itemDataChanges.fire_copy(item);
 }

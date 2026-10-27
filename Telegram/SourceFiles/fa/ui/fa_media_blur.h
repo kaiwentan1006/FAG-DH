@@ -53,4 +53,7 @@ void Paint(
 	bool blurred,
 	Fn<void(Painter&)> paint);
 
+// Same strength as Paint(), keeps the size and pixel ratio of the image.
+[[nodiscard]] QImage BlurImage(QImage image);
+
 } // namespace FAMediaBlur

@@ -7,6 +7,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 */
 #include "data/data_document.h"
 
+#include "fa/ui/fa_media_blur.h"
+
 #include "data/data_document_resolver.h"
 #include "data/data_session.h"
 #include "data/data_streaming.h"
@@ -1450,7 +1452,8 @@ Image *DocumentData::getReplyPreview(
 
 Image *DocumentData::getReplyPreview(not_null<HistoryItem*> item) {
 	const auto media = item->media();
-	const auto spoiler = media && media->hasSpoiler();
+	const auto spoiler = (media && media->hasSpoiler())
+		|| FAMediaBlur::IsItemMediaBlurred(item);
 	return getReplyPreview(item->fullId(), item->history()->peer, spoiler);
 }
 

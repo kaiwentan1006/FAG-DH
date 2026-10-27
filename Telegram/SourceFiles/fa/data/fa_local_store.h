@@ -22,12 +22,20 @@ class LocalStore final {
 public:
 	explicit LocalStore(not_null<Main::Session*> session);
 
-	[[nodiscard]] bool isHidden(FullMsgId id) const;
+	[[nodiscard]] bool isHidden(not_null<const HistoryItem*> item) const;
 	[[nodiscard]] int hiddenCount(PeerId peer) const;
 	[[nodiscard]] int hiddenCount() const;
 	void hide(const MessageIdsList &ids);
 	void unhide(PeerId peer);
 	void unhideAll();
+
+	// Senders hidden in one chat: everything they post there is hidden.
+	[[nodiscard]] bool isSenderHidden(PeerId chat, PeerId sender) const;
+	[[nodiscard]] int hiddenSendersCount(PeerId chat) const;
+	[[nodiscard]] int hiddenSendersCount() const;
+	void hideSender(PeerId chat, PeerId sender);
+	void unhideSenders(PeerId chat);
+	void unhideAllSenders();
 
 	[[nodiscard]] bool isMediaBlurToggled(FullMsgId id) const;
 	void toggleMediaBlur(FullMsgId id);
@@ -35,16 +43,22 @@ public:
 	[[nodiscard]] rpl::producer<> changes() const;
 
 private:
+	using SenderKey = std::pair<PeerId, PeerId>;
+
 	void load();
 	void save() const;
 	void unhideWhere(Fn<bool(FullMsgId)> condition);
+	void unhideSendersWhere(Fn<bool(const SenderKey&)> condition);
 	void refreshViews(const std::vector<FullMsgId> &ids) const;
+	void refreshChatViews(base::flat_set<PeerId> chats) const;
 	void repaintMedia(FullMsgId id) const;
 
 	const not_null<Main::Session*> _session;
 	base::flat_set<FullMsgId> _hidden;
+	base::flat_set<SenderKey> _hiddenSenders;
 	base::flat_set<FullMsgId> _mediaBlurToggled;
 	rpl::event_stream<> _changes;
+	rpl::lifetime _lifetime;
 
 };
 

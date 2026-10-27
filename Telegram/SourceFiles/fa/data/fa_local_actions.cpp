@@ -12,6 +12,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "fa/lang/fa_lang.h"
 #include "fa/ui/fa_media_blur.h"
 
+#include "data/data_peer.h"
 #include "history/history.h"
 #include "history/history_item.h"
 #include "main/main_session.h"
@@ -47,6 +48,22 @@ void AddMessageActions(
 				}
 			},
 			&st::menuIconDisable);
+	}
+	const auto chat = item->history()->peer;
+	const auto sender = item->from();
+	const auto group = chat->isChat() || chat->isMegagroup();
+	if (group && !item->out() && sender != chat) {
+		const auto chatId = chat->id;
+		const auto senderId = sender->id;
+		menu->addAction(
+			FAlang::Translate(u"fa_hide_sender_locally"_q).arg(
+				sender->shortName()),
+			[=] {
+				if (const auto strong = weak.get()) {
+					strong->faLocalStore().hideSender(chatId, senderId);
+				}
+			},
+			&st::menuIconBlock);
 	}
 }
 

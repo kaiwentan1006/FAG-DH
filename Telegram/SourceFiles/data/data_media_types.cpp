@@ -7,6 +7,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 */
 #include "data/data_media_types.h"
 
+#include "fa/ui/fa_media_blur.h"
+
 #include "base/random.h"
 #include "boxes/send_credits_box.h" // CreditsEmoji.
 #include "history/history.h"
@@ -195,6 +197,7 @@ template <typename MediaType>
 		const std::shared_ptr<PhotoMedia> &media,
 		ImageRoundRadius radius,
 		bool spoiler) {
+	spoiler = spoiler || FAMediaBlur::IsItemMediaBlurred(item);
 	const auto photo = media->owner();
 	const auto counted = CountCacheKey(photo, radius, spoiler);
 	if (const auto small = media->image(PhotoSize::Small)) {
@@ -224,6 +227,7 @@ template <typename MediaType>
 		bool spoiler) {
 	Expects(media->owner()->hasThumbnail());
 
+	spoiler = spoiler || FAMediaBlur::IsItemMediaBlurred(item);
 	const auto document = media->owner();
 	if (const auto thumbnail = media->thumbnail()) {
 		const auto readyCacheKey = CountCacheKey(document, radius, spoiler);

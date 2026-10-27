@@ -90,5 +90,10 @@
     "fa_unhide_all_messages": "Show all hidden messages",
     "fa_unhide_all_messages_sure": "Show all messages you have hidden on this device again?",
     "fa_unhide": "Show",
-    "fa_show_hidden_messages": "Show hidden messages (%1)"
+    "fa_show_hidden_messages": "Show hidden messages (%1)",
+    "fa_hide_sender_locally": "Hide all from %1",
+    "fa_show_hidden_senders": "Show hidden senders (%1)",
+    "fa_unhide_all_senders": "Show all hidden senders",
+    "fa_unhide_all_senders_sure": "Show messages from every sender you have hidden on this device again?",
+    "fa_hide_membership_messages": "Hide join and leave messages"
 }

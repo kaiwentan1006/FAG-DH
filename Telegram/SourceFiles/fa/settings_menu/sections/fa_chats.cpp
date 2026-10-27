@@ -133,6 +133,35 @@ namespace Settings {
 				.confirmText = FAlang::RplTranslate(u"fa_unhide"_q),
 			}));
 		});
+		auto senders = rpl::single(
+			rpl::empty
+		) | rpl::then(
+			store->changes()
+		) | rpl::map([=] {
+			return QString::number(store->hiddenSendersCount());
+		});
+		AddButtonWithLabel(
+			container,
+			FAlang::RplTranslate(u"fa_unhide_all_senders"_q),
+			std::move(senders),
+			st::settingsButtonNoIcon
+		)->addClickHandler([=] {
+			if (!store->hiddenSendersCount()) {
+				return;
+			}
+			controller->show(Ui::MakeConfirmBox({
+				.text = FAlang::RplTranslate(u"fa_unhide_all_senders_sure"_q),
+				.confirmed = [=](Fn<void()> close) {
+					store->unhideAllSenders();
+					close();
+				},
+				.confirmText = FAlang::RplTranslate(u"fa_unhide"_q),
+			}));
+		});
+		FASettings::AddJsonToggle(
+			container,
+			u"fa_hide_membership_messages"_q,
+			u"hide_membership_messages"_q);
 		Ui::AddSkip(container);
 		Ui::AddDividerText(
 			container,

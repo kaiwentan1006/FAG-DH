@@ -1,4 +1,5 @@
 /out/
+/build-local/api_credentials.txt
 Debug/
 Release/
 /ThirdParty/

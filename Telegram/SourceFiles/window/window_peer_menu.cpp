@@ -906,20 +906,29 @@ void Filler::addGoToFirstMessage()
 }
 
 void Filler::addShowLocallyHidden() {
-	const auto count = _peer->session().faLocalStore().hiddenCount(_peer->id);
-	if (!count) {
-		return;
-	}
+	const auto store = &_peer->session().faLocalStore();
 	const auto weak = base::make_weak(&_peer->session());
 	const auto peerId = _peer->id;
-	_addAction(
-		FAlang::Translate(u"fa_show_hidden_messages"_q).arg(count),
-		[=] {
-			if (const auto strong = weak.get()) {
-				strong->faLocalStore().unhide(peerId);
-			}
-		},
-		&st::menuIconRestore);
+	if (const auto count = store->hiddenCount(peerId)) {
+		_addAction(
+			FAlang::Translate(u"fa_show_hidden_messages"_q).arg(count),
+			[=] {
+				if (const auto strong = weak.get()) {
+					strong->faLocalStore().unhide(peerId);
+				}
+			},
+			&st::menuIconRestore);
+	}
+	if (const auto count = store->hiddenSendersCount(peerId)) {
+		_addAction(
+			FAlang::Translate(u"fa_show_hidden_senders"_q).arg(count),
+			[=] {
+				if (const auto strong = weak.get()) {
+					strong->faLocalStore().unhideSenders(peerId);
+				}
+			},
+			&st::menuIconRestore);
+	}
 }
 
 void Filler::addViewDiscussion() {

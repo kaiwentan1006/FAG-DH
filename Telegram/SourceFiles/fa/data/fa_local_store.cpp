@@ -8,10 +8,17 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 
 #include "fa/data/fa_local_store.h"
 
+#include "fa/settings/fa_settings.h"
+
+#include "data/data_forum_topic.h"
 #include "data/data_groups.h"
+#include "data/data_peer.h"
+#include "data/data_saved_sublist.h"
 #include "data/data_session.h"
+#include "dialogs/ui/dialogs_message_view.h"
 #include "history/history.h"
 #include "history/history_item.h"
+#include "history/history_item_components.h"
 #include "main/main_session.h"
 #include "storage/storage_account.h"
 
@@ -20,10 +27,17 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 namespace FAData {
 namespace {
 
-// Bump when the serialized layout changes, older data is then dropped.
-constexpr auto kSerializeVersion = qint32(1);
+// Bump when the serialized layout changes. Unknown newer data is dropped.
+constexpr auto kSerializeVersion = qint32(2);
+constexpr auto kOldestReadableVersion = qint32(1);
+constexpr auto kHiddenSendersSinceVersion = qint32(2);
 
 using IdsSet = base::flat_set<FullMsgId>;
+using SendersSet = base::flat_set<std::pair<PeerId, PeerId>>;
+
+[[nodiscard]] QString MembershipSettingKey() {
+	return u"hide_membership_messages"_q;
+}
 
 void WriteSet(QDataStream &stream, const IdsSet &ids) {
 	stream << quint32(ids.size());
@@ -48,15 +62,52 @@ void WriteSet(QDataStream &stream, const IdsSet &ids) {
 	return result;
 }
 
+void WriteSenders(QDataStream &stream, const SendersSet &senders) {
+	stream << quint32(senders.size());
+	for (const auto &[chat, sender] : senders) {
+		stream << SerializePeerId(chat) << SerializePeerId(sender);
+	}
+}
+
+[[nodiscard]] SendersSet ReadSenders(QDataStream &stream) {
+	auto result = SendersSet();
+	auto count = quint32();
+	stream >> count;
+	for (auto i = quint32(); i != count; ++i) {
+		auto chat = quint64();
+		auto sender = quint64();
+		stream >> chat >> sender;
+		if (stream.status() != QDataStream::Ok) {
+			break;
+		}
+		result.emplace(DeserializePeerId(chat), DeserializePeerId(sender));
+	}
+	return result;
+}
+
 } // namespace
 
 LocalStore::LocalStore(not_null<Main::Session*> session)
 : _session(session) {
 	load();
+
+	FASettings::JsonSettings::Events(
+		MembershipSettingKey()
+	) | rpl::start_with_next([=](const QString &) {
+		_session->data().requestItemViewsRefresh([](
+				not_null<const HistoryItem*> item) {
+			return item->Has<HistoryServiceMembership>();
+		});
+	}, _lifetime);
 }
 
-bool LocalStore::isHidden(FullMsgId id) const {
-	return !_hidden.empty() && _hidden.contains(id);
+bool LocalStore::isHidden(not_null<const HistoryItem*> item) const {
+	if (!_hidden.empty() && _hidden.contains(item->fullId())) {
+		return true;
+	} else if (_hiddenSenders.empty() || item->out()) {
+		return false;
+	}
+	return isSenderHidden(item->history()->peer->id, item->from()->id);
 }
 
 int LocalStore::hiddenCount(PeerId peer) const {
@@ -121,6 +172,59 @@ void LocalStore::unhideWhere(Fn<bool(FullMsgId)> condition) {
 	_changes.fire({});
 }
 
+bool LocalStore::isSenderHidden(PeerId chat, PeerId sender) const {
+	return !_hiddenSenders.empty()
+		&& _hiddenSenders.contains(SenderKey{ chat, sender });
+}
+
+int LocalStore::hiddenSendersCount(PeerId chat) const {
+	return int(ranges::count(_hiddenSenders, chat, &SenderKey::first));
+}
+
+int LocalStore::hiddenSendersCount() const {
+	return int(_hiddenSenders.size());
+}
+
+void LocalStore::hideSender(PeerId chat, PeerId sender) {
+	if (!chat || !sender || isSenderHidden(chat, sender)) {
+		return;
+	}
+	_hiddenSenders.emplace(chat, sender);
+	save();
+	refreshChatViews({ chat });
+	_changes.fire({});
+}
+
+void LocalStore::unhideSenders(PeerId chat) {
+	unhideSendersWhere([=](const SenderKey &key) {
+		return key.first == chat;
+	});
+}
+
+void LocalStore::unhideAllSenders() {
+	unhideSendersWhere([](const SenderKey &) { return true; });
+}
+
+void LocalStore::unhideSendersWhere(Fn<bool(const SenderKey&)> condition) {
+	auto chats = base::flat_set<PeerId>();
+	auto removed = std::vector<SenderKey>();
+	for (const auto &key : _hiddenSenders) {
+		if (condition(key)) {
+			removed.push_back(key);
+			chats.emplace(key.first);
+		}
+	}
+	if (removed.empty()) {
+		return;
+	}
+	for (const auto &key : removed) {
+		_hiddenSenders.remove(key);
+	}
+	save();
+	refreshChatViews(std::move(chats));
+	_changes.fire({});
+}
+
 bool LocalStore::isMediaBlurToggled(FullMsgId id) const {
 	return !_mediaBlurToggled.empty() && _mediaBlurToggled.contains(id);
 }
@@ -152,16 +256,21 @@ void LocalStore::load() {
 	auto version = qint32();
 	stream >> version;
 	if (stream.status() != QDataStream::Ok
-		|| version != kSerializeVersion) {
+		|| version < kOldestReadableVersion
+		|| version > kSerializeVersion) {
 		return;
 	}
 	auto hidden = ReadSet(stream);
 	auto toggled = ReadSet(stream);
+	auto senders = (version >= kHiddenSendersSinceVersion)
+		? ReadSenders(stream)
+		: SendersSet();
 	if (stream.status() != QDataStream::Ok) {
 		return;
 	}
 	_hidden = std::move(hidden);
 	_mediaBlurToggled = std::move(toggled);
+	_hiddenSenders = std::move(senders);
 }
 
 void LocalStore::save() const {
@@ -172,6 +281,7 @@ void LocalStore::save() const {
 		stream << kSerializeVersion;
 		WriteSet(stream, _hidden);
 		WriteSet(stream, _mediaBlurToggled);
+		WriteSenders(stream, _hiddenSenders);
 	}
 	_session->local().writeFALocalData(bytes);
 }
@@ -185,23 +295,45 @@ void LocalStore::refreshViews(const std::vector<FullMsgId> &ids) const {
 	}
 }
 
+void LocalStore::refreshChatViews(base::flat_set<PeerId> chats) const {
+	_session->data().requestItemViewsRefresh([=](
+			not_null<const HistoryItem*> item) {
+		return chats.contains(item->history()->peer->id);
+	});
+}
+
 void LocalStore::repaintMedia(FullMsgId id) const {
 	const auto owner = &_session->data();
 	const auto item = owner->message(id);
 	if (!item) {
 		return;
-	} else if (const auto group = owner->groups().find(item)) {
+	}
+	const auto repaint = [&](not_null<HistoryItem*> item) {
+		// Chat list previews cache their thumbnails until invalidated.
+		item->history()->lastItemDialogsView().itemInvalidated(item);
+		if (const auto topic = item->topic()) {
+			topic->lastItemDialogsView().itemInvalidated(item);
+		}
+		if (const auto sublist = item->savedSublist()) {
+			sublist->lastItemDialogsView().itemInvalidated(item);
+		}
+		owner->requestItemRepaint(item);
+	};
+	if (const auto group = owner->groups().find(item)) {
 		for (const auto &part : group->items) {
-			owner->requestItemRepaint(part);
+			repaint(part);
 		}
 	} else {
-		owner->requestItemRepaint(item);
+		repaint(item);
 	}
 }
 
 bool IsHiddenLocally(not_null<const HistoryItem*> item) {
-	return item->history()->session().faLocalStore().isHidden(
-		item->fullId());
+	if (item->Has<HistoryServiceMembership>()
+		&& FASettings::JsonSettings::GetBool(MembershipSettingKey())) {
+		return true;
+	}
+	return item->history()->session().faLocalStore().isHidden(item);
 }
 
 } // namespace FAData
