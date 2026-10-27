@@ -1,5 +1,6 @@
 /out/
 /build-local/api_credentials.txt
+/build-local/local-settings.bat
 Debug/
 Release/
 /ThirdParty/

@@ -32,8 +32,40 @@ set "GYP_MSVS_OVERRIDE_PATH=%FA_VSDIR%\"
 set "GYP_MSVS_VERSION=2022"
 set "PYTHONUNBUFFERED=1"
 
+rem Long transfers from GitHub / googlesource get dropped on some networks,
+rem so the download steps rerun this many times, resuming where they stopped.
+rem Machine specific overrides (FA_PROXY, FA_RETRIES, ...), not committed.
+if exist "%~dp0local-settings.bat" call "%~dp0local-settings.bat"
+
+rem Optional proxy for every download (git, pacman, python, curl).
+if defined FA_PROXY (
+    set "HTTP_PROXY=%FA_PROXY%"
+    set "HTTPS_PROXY=%FA_PROXY%"
+    set "ALL_PROXY=%FA_PROXY%"
+    set "NO_PROXY=localhost,127.0.0.1"
+)
+
+if not defined FA_RETRIES set "FA_RETRIES=8"
+
+rem MSYS2 package mirrors tried before the official ones (space separated,
+rem "none" to use only the official list). Defaults are mainland China ones.
+if not defined FA_MSYS2_MIRRORS set "FA_MSYS2_MIRRORS=https://mirrors.tuna.tsinghua.edu.cn/msys2 https://mirrors.aliyun.com/msys2"
+
+rem Git settings for every clone made by these scripts, without touching the
+rem global git config: long paths, abort stalled transfers instead of hanging.
+set "GIT_CONFIG_COUNT=4"
+set "GIT_CONFIG_KEY_0=core.longpaths"
+set "GIT_CONFIG_VALUE_0=true"
+set "GIT_CONFIG_KEY_1=http.version"
+set "GIT_CONFIG_VALUE_1=HTTP/1.1"
+set "GIT_CONFIG_KEY_2=http.lowSpeedLimit"
+set "GIT_CONFIG_VALUE_2=1000"
+set "GIT_CONFIG_KEY_3=http.lowSpeedTime"
+set "GIT_CONFIG_VALUE_3=60"
+
 set "FA_ENV_READY=1"
 echo [env] Visual Studio: %FA_VSDIR%
 echo [env] Repository:    %FA_REPO%
 echo [env] Build root:    %FA_BUILD_ROOT%
+if defined FA_PROXY (echo [env] Proxy:         %FA_PROXY%) else (echo [env] Proxy:         none)
 exit /b 0
