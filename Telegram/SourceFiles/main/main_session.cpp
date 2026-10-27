@@ -8,6 +8,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "main/main_session.h"
 
 #include "fa/settings/fa_settings.h"
+#include "fa/data/fa_local_store.h"
 
 #include "apiwrap.h"
 #include "api/api_peer_colors.h"
@@ -126,6 +127,7 @@ Session::Session(
 , _cachedReactionIconFactory(std::make_unique<ReactionIconFactory>())
 , _supportHelper(Support::Helper::Create(this))
 , _fastButtonsBots(std::make_unique<Support::FastButtonsBots>(this))
+, _faLocalStore(std::make_unique<FAData::LocalStore>(this))
 , _saveSettingsTimer([=] { saveSettings(); }) {
 	Expects(_settings != nullptr);
 

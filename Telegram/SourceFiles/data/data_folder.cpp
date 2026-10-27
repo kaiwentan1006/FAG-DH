@@ -267,14 +267,14 @@ void Folder::paintUserpic(
 		int size,
 		const style::color *overrideBg,
 		const style::color *overrideFg) const {
-	bool use_default_rounding = FASettings::JsonSettings::GetInt("use_default_rounding");
+	const auto roundness = FASettings::JsonSettings::UserpicRoundness();
 
 	p.setPen(Qt::NoPen);
 	p.setBrush(overrideBg ? *overrideBg : st::historyPeerArchiveUserpicBg);
 	{
 		PainterHighQualityEnabler hq(p);
-		if (!use_default_rounding) {
-			auto radius = FASettings::JsonSettings::GetInt("roundness") / 100. * size;
+		if (roundness) {
+			const auto radius = *roundness * size;
 			p.drawRoundedRect(x, y, size, size, radius, radius);
 		}
 		else {

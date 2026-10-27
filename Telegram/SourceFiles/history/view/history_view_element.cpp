@@ -7,6 +7,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_element.h"
 
+#include "fa/data/fa_local_store.h"
+
 #include "history/view/history_view_service_message.h"
 #include "history/view/history_view_message.h"
 #include "history/view/media/history_view_media_generic.h"
@@ -1006,7 +1008,7 @@ bool Element::isHiddenByGroup() const {
 }
 
 bool Element::isHidden() const {
-	return isHiddenByGroup();
+	return isHiddenByGroup() || FAData::IsHiddenLocally(data());
 }
 
 void Element::overrideMedia(std::unique_ptr<Media> media) {

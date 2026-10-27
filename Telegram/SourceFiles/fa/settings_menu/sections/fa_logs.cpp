@@ -10,6 +10,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 
 #include "fa/settings/fa_settings.h"
 #include "fa/settings_menu/sections/fa_logs.h"
+#include "fa/settings_menu/fa_settings_toggles.h"
 
 #include "fa/lang/fa_lang.h"
 
@@ -37,21 +38,6 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "api/api_blocked_peers.h"
 #include "ui/widgets/continuous_sliders.h"
 
-#define SettingsMenuJsonSwitch(LangKey, Option) container->add(object_ptr<Button>( \
-	container, \
-    FAlang::RplTranslate(QString(#LangKey)), \
-	st::settingsButtonNoIcon \
-))->toggleOn( \
-	rpl::single(::FASettings::JsonSettings::GetBool(#Option)) \
-)->toggledValue( \
-) | rpl::filter([](bool enabled) { \
-	return (enabled != ::FASettings::JsonSettings::GetBool(#Option)); \
-}) | rpl::start_with_next([](bool enabled) { \
-	::FASettings::JsonSettings::Write(); \
-	::FASettings::JsonSettings::Set(#Option, enabled); \
-	::FASettings::JsonSettings::Write(); \
-}, container->lifetime());
-
 namespace Settings {
 
     rpl::producer<QString> FALogs::title() {
@@ -78,7 +64,10 @@ namespace Settings {
 			Core::App().openLocalUrl("tg://fa/clean_debug_logs", {});
 		});
 		
-		SettingsMenuJsonSwitch(fa_debug_logs, debug_logs)
+		FASettings::AddJsonToggle(
+			container,
+			u"fa_debug_logs"_q,
+			u"debug_logs"_q);
 
 		Ui::AddSkip(container);
 		Ui::AddDividerText(container, FAlang::RplTranslate(QString("fa_logs_dir")));

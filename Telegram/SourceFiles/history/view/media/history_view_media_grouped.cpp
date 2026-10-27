@@ -7,6 +7,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 */
 #include "history/view/media/history_view_media_grouped.h"
 
+#include "fa/ui/fa_media_blur.h"
+
 #include "history/history_item_components.h"
 #include "history/history_item.h"
 #include "history/history.h"
@@ -430,15 +432,24 @@ void GroupedMedia::draw(Painter &p, const PaintContext &context) const {
 		if (!part.cache.isNull()) {
 			wasCache = true;
 		}
-		part.content->drawGrouped(
+		const auto partGeometry = part.geometry.translated(
+			0,
+			groupPadding.top());
+		FAMediaBlur::Paint(
 			p,
-			partContext,
-			part.geometry.translated(0, groupPadding.top()),
-			part.sides,
-			applyRoundingSides(rounding, part.sides),
-			highlightOpacity,
-			&part.cacheKey,
-			&part.cache);
+			partGeometry,
+			FAMediaBlur::IsBlurred(part.content.get(), part.item),
+			[&](Painter &q) {
+				part.content->drawGrouped(
+					q,
+					partContext,
+					partGeometry,
+					part.sides,
+					applyRoundingSides(rounding, part.sides),
+					highlightOpacity,
+					&part.cacheKey,
+					&part.cache);
+			});
 		if (!part.cache.isNull()) {
 			nowCache = true;
 		}

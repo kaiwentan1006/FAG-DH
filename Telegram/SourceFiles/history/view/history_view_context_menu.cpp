@@ -8,6 +8,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "history/view/history_view_context_menu.h"
 
 #include "fa/utils/telegram_helpers.h"
+#include "fa/data/fa_local_actions.h"
 
 #include "api/api_attached_stickers.h"
 #include "api/api_editing.h"
@@ -1058,12 +1059,22 @@ void AddMessageActions(
 		not_null<ListWidget*> list) {
 	if (request.item) {
 		MessageDetails(menu, request.item);
+		if (request.selectedItems.empty()) {
+			FAData::AddMessageActions(menu, request.item);
+		}
 	}
 
 	AddPostLinkAction(menu, request);
 	AddForwardAction(menu, request, list);
 	AddSendNowAction(menu, request, list);
 	AddDeleteAction(menu, request, list);
+	if (request.overSelection && !request.selectedItems.empty()) {
+		FAData::AddHideSelectedAction(
+			menu,
+			&request.navigation->session(),
+			ExtractIdsList(request.selectedItems),
+			crl::guard(list, [=] { list->cancelSelection(); }));
+	}
 	AddDownloadFilesAction(menu, request, list);
 	AddReportAction(menu, request, list);
 	AddSelectionAction(menu, request, list);

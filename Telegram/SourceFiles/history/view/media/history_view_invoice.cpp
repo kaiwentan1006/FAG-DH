@@ -7,6 +7,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 */
 #include "history/view/media/history_view_invoice.h"
 
+#include "fa/ui/fa_media_blur.h"
+
 #include "lang/lang_keys.h"
 #include "history/view/history_view_element.h"
 #include "history/view/history_view_cursor_state.h"
@@ -258,12 +260,18 @@ void Invoice::draw(Painter &p, const PaintContext &context) const {
 		if (rtl()) attachLeft = width() - attachLeft - _attach->width();
 
 		p.translate(attachLeft, attachTop);
-		_attach->draw(p, context.translated(
-			-attachLeft,
-			-attachTop
-		).withSelection(context.selected()
-			? FullSelection
-			: TextSelection()));
+		FAMediaBlur::Paint(
+			p,
+			QRect(0, 0, _attach->width(), _attach->height()),
+			FAMediaBlur::IsBlurred(_attach.get(), _parent->data()),
+			[&](Painter &q) {
+				_attach->draw(q, context.translated(
+					-attachLeft,
+					-attachTop
+				).withSelection(context.selected()
+					? FullSelection
+					: TextSelection()));
+			});
 		auto pixwidth = _attach->width();
 
 		auto available = _status.maxWidth();

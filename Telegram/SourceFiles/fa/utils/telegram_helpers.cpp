@@ -16,7 +16,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonArray>
 #include <QtNetwork/QNetworkRequest>
-#include <QtCore/QEventLoop>
+#include <QtCore/QCoreApplication>
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QDebug>
 
@@ -25,37 +25,103 @@ std::unordered_set<ID> fagram_devs;
 
 std::unordered_map<ID, bool> state;
 
-void fetchAndParseData(const QUrl &url, std::unordered_set<ID> &targetSet) {
-    QNetworkAccessManager manager;
-    QNetworkRequest request(url);
+namespace {
 
-    QEventLoop loop;
-    QNetworkReply *reply = manager.get(request);
-    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    loop.exec();
+enum class FAgramDataState {
+	Empty,
+	Loading,
+	Loaded,
+};
 
-    if (reply->error() == QNetworkReply::NoError) {
-        QByteArray response = reply->readAll();
-        QJsonDocument jsonResponse = QJsonDocument::fromJson(response);
-        if (jsonResponse.isArray()) {
-            QJsonArray jsonArray = jsonResponse.array();
-            for (const QJsonValue &value : jsonArray) {
-                if (value.isDouble()) {
-                    targetSet.insert(static_cast<ID>(value.toDouble()));
-                }
-            }
-        }
-    }
+auto FAgramData = FAgramDataState::Empty;
 
-    reply->deleteLater();
+[[nodiscard]] rpl::event_stream<> &FAgramDataUpdates() {
+	static auto result = rpl::event_stream<>();
+	return result;
 }
 
-void initialize_fagram_data() {
-    QUrl channelsUrl("https://api.fagram.app/channels");
-    fetchAndParseData(channelsUrl, fagram_channels);
+[[nodiscard]] QNetworkAccessManager *FAgramNetwork() {
+	static const auto result = new QNetworkAccessManager(
+		QCoreApplication::instance());
+	return result;
+}
 
-    QUrl devsUrl("https://api.fagram.app/devs");
-    fetchAndParseData(devsUrl, fagram_devs);
+[[nodiscard]] QUrl FAgramApiUrl(const QString &path) {
+	auto base = FASettings::JsonSettings::GetString(u"fagram_api_url"_q);
+	while (base.endsWith('/')) {
+		base.chop(1);
+	}
+	return QUrl(base + '/' + path);
+}
+
+[[nodiscard]] bool IsKnownFAgramRelated(ID peerId) {
+	return fagram_devs.contains(peerId) || fagram_channels.contains(peerId);
+}
+
+// Never blocks: the service is unreachable from some networks.
+void fetchAndParseData(
+		const QString &path,
+		std::unordered_set<ID> &targetSet,
+		Fn<void(bool)> done) {
+	auto request = QNetworkRequest(FAgramApiUrl(path));
+	request.setTransferTimeout(
+		FASettings::JsonSettings::GetInt(u"fagram_api_timeout"_q));
+	const auto reply = FAgramNetwork()->get(request);
+	QObject::connect(reply, &QNetworkReply::finished, [=, &targetSet] {
+		reply->deleteLater();
+		if (reply->error() != QNetworkReply::NoError) {
+			done(false);
+			return;
+		}
+		const auto document = QJsonDocument::fromJson(reply->readAll());
+		if (!document.isArray()) {
+			done(false);
+			return;
+		}
+		for (const auto &value : document.array()) {
+			if (value.isDouble()) {
+				targetSet.insert(static_cast<ID>(value.toDouble()));
+			}
+		}
+		done(true);
+	});
+}
+
+} // namespace
+
+void initialize_fagram_data() {
+	if (FAgramData != FAgramDataState::Empty) {
+		return;
+	}
+	FAgramData = FAgramDataState::Loading;
+
+	struct Pending {
+		int left = 2;
+		bool failed = false;
+	};
+	const auto pending = std::make_shared<Pending>();
+	const auto done = [=](bool success) {
+		pending->failed |= !success;
+		if (--pending->left) {
+			return;
+		}
+		// After a failure the next lookup asks the service again.
+		FAgramData = pending->failed
+			? FAgramDataState::Empty
+			: FAgramDataState::Loaded;
+		FAgramDataUpdates().fire({});
+	};
+	fetchAndParseData(u"channels"_q, fagram_channels, done);
+	fetchAndParseData(u"devs"_q, fagram_devs, done);
+}
+
+rpl::producer<bool> FAgramRelatedValue(ID peerId) {
+	initialize_fagram_data();
+	return rpl::single(rpl::empty) | rpl::then(
+		FAgramDataUpdates().events()
+	) | rpl::map([=] {
+		return IsKnownFAgramRelated(peerId);
+	}) | rpl::distinct_until_changed();
 }
 
 void markAsOnline(not_null<Main::Session*> session) {
@@ -168,10 +234,8 @@ ID getBareID(not_null<PeerData*> peer) {
 }
 
 bool isFAgramRelated(ID peerId) {
-    if (fagram_channels.empty() || fagram_devs.empty()) {
-        initialize_fagram_data();
-    }
-    return fagram_devs.contains(peerId) || fagram_channels.contains(peerId);
+	initialize_fagram_data();
+	return IsKnownFAgramRelated(peerId);
 }
 
 QString getLocationDC(int dc_id) {

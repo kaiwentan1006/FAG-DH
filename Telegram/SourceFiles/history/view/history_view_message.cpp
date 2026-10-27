@@ -7,6 +7,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_message.h"
 
+#include "fa/ui/fa_media_blur.h"
+
 #include "api/api_suggest_post.h"
 #include "base/unixtime.h"
 #include "core/click_handler_types.h" // ClickHandlerContext
@@ -1419,9 +1421,15 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 				&& context.highlightPathCache->isEmpty();
 			auto mediaPosition = QPoint(inner.left(), top);
 			p.translate(mediaPosition);
-			media->draw(p, context.translated(
-				-mediaPosition
-			).withSelection(mediaSelection));
+			FAMediaBlur::Paint(
+				p,
+				QRect(0, 0, media->width(), mediaHeight),
+				FAMediaBlur::IsBlurred(media, data()),
+				[&](Painter &q) {
+					media->draw(q, context.translated(
+						-mediaPosition
+					).withSelection(mediaSelection));
+				});
 			if (context.reactionInfo && !displayInfo && !_reactions) {
 				const auto add = QPoint(0, mediaHeight);
 				context.reactionInfo->position = mediaPosition + add;
@@ -1540,9 +1548,15 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 		}
 	} else if (media && media->isDisplayed()) {
 		p.translate(g.topLeft());
-		media->draw(p, context.translated(
-			-g.topLeft()
-		).withSelection(skipTextSelection(context.selection)));
+		FAMediaBlur::Paint(
+			p,
+			QRect(0, 0, media->width(), media->height()),
+			FAMediaBlur::IsBlurred(media, data()),
+			[&](Painter &q) {
+				media->draw(q, context.translated(
+					-g.topLeft()
+				).withSelection(skipTextSelection(context.selection)));
+			});
 		if (context.reactionInfo && !_reactions) {
 			const auto add = QPoint(0, g.height());
 			context.reactionInfo->position = g.topLeft() + add;

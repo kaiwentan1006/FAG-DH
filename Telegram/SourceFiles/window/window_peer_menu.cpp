@@ -8,6 +8,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "window/window_peer_menu.h"
 
 #include "fa/lang/fa_lang.h"
+#include "fa/data/fa_local_store.h"
 
 #include "base/call_delayed.h"
 #include "menu/menu_check_item.h"
@@ -329,6 +330,7 @@ private:
 	void addThemeEdit();
 	void addBlockUser();
 	void addGoToFirstMessage();
+	void addShowLocallyHidden();
 	void addViewDiscussion();
 	void addDirectMessages();
 	void addToggleTopicClosed();
@@ -901,6 +903,23 @@ void Filler::addGoToFirstMessage()
 		FAlang::Translate(QString("fa_go_to_first_message")),
 		GoToFirstMessageHandler(_controller, _peer),
 		&st::menuIconGoToBeginning);
+}
+
+void Filler::addShowLocallyHidden() {
+	const auto count = _peer->session().faLocalStore().hiddenCount(_peer->id);
+	if (!count) {
+		return;
+	}
+	const auto weak = base::make_weak(&_peer->session());
+	const auto peerId = _peer->id;
+	_addAction(
+		FAlang::Translate(u"fa_show_hidden_messages"_q).arg(count),
+		[=] {
+			if (const auto strong = weak.get()) {
+				strong->faLocalStore().unhide(peerId);
+			}
+		},
+		&st::menuIconRestore);
 }
 
 void Filler::addViewDiscussion() {
@@ -1578,6 +1597,7 @@ void Filler::fillHistoryActions() {
 	addThemeEdit();
 	addViewDiscussion();
 	addGoToFirstMessage();
+	addShowLocallyHidden();
 	addDirectMessages();
 	addExportChat();
 	addTranslate();

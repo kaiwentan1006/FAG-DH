@@ -112,6 +112,8 @@ const auto CommandByName = base::flat_map<QString, Command>{
 	{ u"show_chat_menu"_q    , Command::ShowChatMenu },
 	{ u"show_chat_preview"_q , Command::ShowChatPreview },
 
+	{ u"toggle_media_blur"_q , Command::ToggleMediaBlur },
+
 	// Shortcuts that have no default values.
 	{ u"message"_q                       , Command::JustSendMessage },
 	{ u"message_silently"_q              , Command::SendSilentMessage },
@@ -508,6 +510,8 @@ void Manager::fillDefaults() {
 
 	set(u"ctrl+\\"_q, Command::ShowChatMenu);
 	set(u"ctrl+]"_q, Command::ShowChatPreview);
+
+	set(u"alt+k"_q, Command::ToggleMediaBlur);
 
 	_defaults = keysCurrents();
 }

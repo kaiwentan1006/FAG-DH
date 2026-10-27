@@ -70,6 +70,7 @@ void readReactions(base::weak_ptr<Data::Thread> weakThread);
 
 ID getBareID(not_null<PeerData*> peer);
 bool isFAgramRelated(ID peerId);
+[[nodiscard]] rpl::producer<bool> FAgramRelatedValue(ID peerId);
 
 QString getLocationDC(int dc_id);
 QString getPeerDC(not_null<PeerData*> peer);

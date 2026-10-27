@@ -18,10 +18,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include <QtCore/QFile>
 
 namespace FAlang {
-    std::unique_ptr<QFile> GetLangFile(bool useDefault);
-
     rpl::producer<QString> RplTranslate(const QString &key);
     QString Translate(const QString &key);
 
-    void Load(const QString &baseLangCode, const QString &lang_code);
+    void Load(const QString &baseLangCode, const QString &langCode);
 }

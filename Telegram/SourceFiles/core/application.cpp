@@ -264,6 +264,10 @@ void Application::run() {
 	startLocalStorage();
 
 	FAlang::Load(Lang::GetInstance().baseId(), Lang::GetInstance().id());
+	Lang::GetInstance().updated(
+	) | rpl::start_with_next([] {
+		FAlang::Load(Lang::GetInstance().baseId(), Lang::GetInstance().id());
+	}, _lifetime);
 
 	style::SetCustomFont(settings().customFontFamily());
 	style::internal::StartFonts();

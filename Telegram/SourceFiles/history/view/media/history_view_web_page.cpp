@@ -7,6 +7,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 */
 #include "history/view/media/history_view_web_page.h"
 
+#include "fa/ui/fa_media_blur.h"
+
 #include "core/application.h"
 #include "countries/countries_instance.h"
 #include "base/qt/qt_key_modifiers.h"
@@ -1008,7 +1010,17 @@ void WebPage::draw(Painter &p, const PaintContext &context) const {
 		} else if (const auto blurred = _photoMedia->thumbnailInline()) {
 			pix = blurred->pixSingle(size, args.blurred());
 		}
-		p.drawPixmapLeft(inner.left() + paintw - pw, tshift, width(), pix);
+		FAMediaBlur::Paint(
+			p,
+			style::rtlrect(inner.left() + paintw - pw, tshift, pw, ph, width()),
+			FAMediaBlur::IsBlurred(FAMediaBlur::Kind::Photo, _parent->data()),
+			[&](Painter &q) {
+				q.drawPixmapLeft(
+					inner.left() + paintw - pw,
+					tshift,
+					width(),
+					pix);
+			});
 		if (context.selected()) {
 			const auto st = context.st;
 			Ui::FillRoundRect(
@@ -1169,12 +1181,18 @@ void WebPage::draw(Painter &p, const PaintContext &context) const {
 
 		p.translate(attachLeft, attachTop);
 
-		_attach->draw(p, context.translated(
-			-attachLeft,
-			-attachTop
-		).withSelection(context.selected()
-			? FullSelection
-			: TextSelection()));
+		FAMediaBlur::Paint(
+			p,
+			QRect(0, 0, _attach->width(), _attach->height()),
+			FAMediaBlur::IsBlurred(_attach.get(), _parent->data()),
+			[&](Painter &q) {
+				_attach->draw(q, context.translated(
+					-attachLeft,
+					-attachTop
+				).withSelection(context.selected()
+					? FullSelection
+					: TextSelection()));
+			});
 		const auto pixwidth = _attach->width();
 		const auto pixheight = _attach->height();
 

@@ -74,6 +74,8 @@ enum class Command {
 	ShowChatMenu,
 	ShowChatPreview,
 
+	ToggleMediaBlur,
+
 	SupportReloadTemplates,
 	SupportToggleMuted,
 	SupportScrollToCurrent,

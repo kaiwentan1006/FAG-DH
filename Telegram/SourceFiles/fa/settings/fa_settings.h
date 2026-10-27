@@ -15,6 +15,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include <QtCore/QVariant>
 #include <QtCore/QJsonArray>
 
+#include <optional>
+
 namespace FASettings {
 
 namespace JsonSettings {
@@ -114,6 +116,18 @@ inline QJsonArray GetJsonArrayWithPending(
 	bool isTestAccount = false) {
 	return GetWithPending(key, accountId, isTestAccount).toJsonArray();
 }
+
+struct IntRange {
+	int min = 0;
+	int max = 0;
+};
+
+// Allowed bounds of an integer setting, std::nullopt if unbounded.
+[[nodiscard]] std::optional<IntRange> IntSettingRange(const QString &key);
+
+// Corner radius as a fraction of the userpic size,
+// or std::nullopt when the upstream userpic shapes should be used.
+[[nodiscard]] std::optional<float64> UserpicRoundness();
 
 } // namespace JsonSettings
 } // namespace FASettings

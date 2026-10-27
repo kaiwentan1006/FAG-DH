@@ -8,6 +8,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "window/window_session_controller.h"
 
 #include "fa/settings/fa_settings.h"
+#include "fa/data/fa_local_store.h"
+#include "fa/ui/fa_media_blur.h"
 
 #include "api/api_text_entities.h"
 #include "boxes/add_contact_box.h"
@@ -1769,6 +1771,15 @@ void SessionController::setupShortcuts() {
 				return true;
 			});
 		}
+
+		request->check(C::ToggleMediaBlur) && request->handle([=] {
+			const auto id = FAMediaBlur::HoveredMediaItem(&session());
+			if (!id) {
+				return false;
+			}
+			session().faLocalStore().toggleMediaBlur(*id);
+			return true;
+		});
 
 		if (!session().supportMode()) {
 			return;

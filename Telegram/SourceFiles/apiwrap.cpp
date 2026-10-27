@@ -3320,6 +3320,19 @@ void ApiWrap::sendAction(const SendAction &action) {
 		} else {
 			_session->data().histories().readInbox(action.history);
 		}
+		if (FASettings::JsonSettings::GetBool(u"mark_read_after_action"_q)) {
+			const auto thread = topic
+				? static_cast<Data::Thread*>(topic)
+				: sublist
+				? static_cast<Data::Thread*>(sublist)
+				: static_cast<Data::Thread*>(action.history.get());
+			if (thread->unreadMentions().has()) {
+				readMentions(base::make_weak(thread));
+			}
+			if (thread->unreadReactions().has()) {
+				readReactions(base::make_weak(thread));
+			}
+		}
 		action.history->getReadyFor(ShowAtTheEndMsgId);
 	}
 	_sendActions.fire_copy(action);

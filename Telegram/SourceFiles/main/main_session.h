@@ -74,6 +74,10 @@ namespace Ui {
 struct ColorIndicesCompressed;
 } // namespace Ui
 
+namespace FAData {
+class LocalStore;
+} // namespace FAData
+
 namespace Main {
 
 class Account;
@@ -197,6 +201,9 @@ public:
 	[[nodiscard]] Data::PromoSuggestions &promoSuggestions() const {
 		return *_promoSuggestions;
 	}
+	[[nodiscard]] FAData::LocalStore &faLocalStore() const {
+		return *_faLocalStore;
+	}
 	[[nodiscard]] auto cachedReactionIconFactory() const
 	-> HistoryView::Reactions::CachedIconFactory & {
 		return *_cachedReactionIconFactory;
@@ -306,6 +313,8 @@ private:
 
 	const std::unique_ptr<Support::Helper> _supportHelper;
 	const std::unique_ptr<Support::FastButtonsBots> _fastButtonsBots;
+
+	const std::unique_ptr<FAData::LocalStore> _faLocalStore;
 
 	std::shared_ptr<QImage> _selfUserpicView;
 	rpl::variable<bool> _premiumPossible = false;

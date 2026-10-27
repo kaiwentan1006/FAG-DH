@@ -40,7 +40,7 @@ void ValidateUserpicCache(
 		|| (cloud && !view.empty.null())
 		|| (empty && empty != view.empty.get())
 		|| (empty && view.paletteVersion != version);
-	bool use_default_rounding = FASettings::JsonSettings::GetBool("use_default_rounding");
+	const auto roundness = FASettings::JsonSettings::UserpicRoundness();
 	if (!regenerate) {
 		return;
 	}
@@ -49,7 +49,7 @@ void ValidateUserpicCache(
 	view.paletteVersion = version;
 
 	const auto forum = (shape == PeerUserpicShape::Forum);
-	const auto radius = size * (FASettings::JsonSettings::GetInt("roundness") / 100) / style::DevicePixelRatio();
+	const auto radius = size * roundness.value_or(0.) / style::DevicePixelRatio();
 
 	if (cloud) {
 		view.cached = cloud->scaled(
@@ -59,7 +59,7 @@ void ValidateUserpicCache(
 		if (shape == PeerUserpicShape::Monoforum) {
 			view.cached = Ui::ApplyMonoforumShape(std::move(view.cached));
 		} else if (forum) {
-			if (use_default_rounding) {
+			if (!roundness) {
 				view.cached = Images::Round(
 					std::move(view.cached),
 					Images::CornersMask(size
@@ -83,7 +83,7 @@ void ValidateUserpicCache(
 		if (shape == PeerUserpicShape::Monoforum) {
 			empty->paintMonoforum(p, 0, 0, size, size);
 		} else if (forum) {
-			if (use_default_rounding) {
+			if (!roundness) {
 				empty->paintRounded(
 					p,
 					0,

@@ -1,0 +1,53 @@
+/*
+This file is part of FAgram Desktop,
+the unofficial desktop client based on Telegram Desktop.
+
+For license and copyright information please follow this link:
+https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
+*/
+
+#pragma once
+
+class HistoryItem;
+
+namespace Main {
+class Session;
+} // namespace Main
+
+namespace FAData {
+
+// Per-account data that exists only on this device, stored encrypted
+// in the account local storage next to the other tdata files.
+class LocalStore final {
+public:
+	explicit LocalStore(not_null<Main::Session*> session);
+
+	[[nodiscard]] bool isHidden(FullMsgId id) const;
+	[[nodiscard]] int hiddenCount(PeerId peer) const;
+	[[nodiscard]] int hiddenCount() const;
+	void hide(const MessageIdsList &ids);
+	void unhide(PeerId peer);
+	void unhideAll();
+
+	[[nodiscard]] bool isMediaBlurToggled(FullMsgId id) const;
+	void toggleMediaBlur(FullMsgId id);
+
+	[[nodiscard]] rpl::producer<> changes() const;
+
+private:
+	void load();
+	void save() const;
+	void unhideWhere(Fn<bool(FullMsgId)> condition);
+	void refreshViews(const std::vector<FullMsgId> &ids) const;
+	void repaintMedia(FullMsgId id) const;
+
+	const not_null<Main::Session*> _session;
+	base::flat_set<FullMsgId> _hidden;
+	base::flat_set<FullMsgId> _mediaBlurToggled;
+	rpl::event_stream<> _changes;
+
+};
+
+[[nodiscard]] bool IsHiddenLocally(not_null<const HistoryItem*> item);
+
+} // namespace FAData

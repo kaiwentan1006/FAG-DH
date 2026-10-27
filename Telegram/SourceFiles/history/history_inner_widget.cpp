@@ -8,6 +8,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "history/history_inner_widget.h"
 
 #include "fa/utils/telegram_helpers.h"
+#include "fa/data/fa_local_actions.h"
 
 #include "chat_helpers/stickers_emoji_pack.h"
 #include "core/file_utilities.h"
@@ -2484,6 +2485,9 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 		}
 
 		MessageDetails(_menu, item);
+		FAData::AddMessageActions(
+			_menu,
+			albumPartItem ? albumPartItem : item);
 	};
 	const auto addPhotoActions = [&](not_null<PhotoData*> photo, HistoryItem *item) {
 		const auto media = photo->activeMediaView();
@@ -2804,6 +2808,11 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 					_widget->confirmDeleteSelected();
 				}, &st::menuIconDelete);
 			}
+			FAData::AddHideSelectedAction(
+				_menu,
+				session,
+				getSelectedItems(),
+				[=] { _widget->clearSelected(); });
 			if (selectedState.count > 0 && !hasCopyRestrictionForSelected()) {
 				Menu::AddDownloadFilesAction(_menu, controller, _selected, this);
 			}
@@ -3059,6 +3068,11 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 					_widget->confirmDeleteSelected();
 				}, &st::menuIconDelete);
 			}
+			FAData::AddHideSelectedAction(
+				_menu,
+				session,
+				getSelectedItems(),
+				[=] { _widget->clearSelected(); });
 			if (selectedState.count > 0 && !hasCopyRestrictionForSelected()) {
 				Menu::AddDownloadFilesAction(_menu, controller, _selected, this);
 			}

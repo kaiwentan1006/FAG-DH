@@ -10,6 +10,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/event_filter.h"
 #include "core/application.h"
 #include "core/shortcuts.h"
+#include "fa/lang/fa_lang.h"
 #include "lang/lang_keys.h"
 #include "ui/text/text_utilities.h"
 #include "ui/widgets/buttons.h"
@@ -99,6 +100,10 @@ struct Labeled {
 		{ C::ShowScheduled, tr::lng_shortcuts_scheduled() },
 		{ C::ShowChatMenu, tr::lng_shortcuts_show_chat_menu() },
 		{ C::ShowChatPreview, tr::lng_shortcuts_show_chat_preview() },
+		{
+			C::ToggleMediaBlur,
+			FAlang::RplTranslate(u"fa_shortcut_toggle_media_blur"_q),
+		},
 		separator,
 		{ C::JustSendMessage, tr::lng_shortcuts_just_send() },
 		{ C::SendSilentMessage, tr::lng_shortcuts_silent_send() },

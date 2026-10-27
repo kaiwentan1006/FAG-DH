@@ -619,7 +619,11 @@ Cover::Cover(
 			this,
 			st::infoPeerBadge,
 			&peer->session(),
-			_badgeContent.value(),
+			FAgramRelatedValue(getBareID(peer)) | rpl::map([](bool related) {
+				return Badge::Content{
+					related ? BadgeType::FAgram : BadgeType::None,
+				};
+			}),
 			_emojiStatusPanel.get(),
 			[=] {
 				return controller->isGifPausedAtLeastFor(
@@ -703,17 +707,11 @@ Cover::Cover(
 	rpl::merge(
 		_botVerify->updated(),
 		_badge->updated(),
+		_devBadge->updated(),
 		_verified->updated()
 	) | rpl::start_with_next([=] {
 		refreshNameGeometry(width());
 	}, _name->lifetime());
-
-	if (isFAgramRelated(getBareID(_peer))) {
-		_devBadge->setContent(Info::Profile::Badge::Content{BadgeType::FAgram});
-	}
-	else {
-		_devBadge->setContent(Info::Profile::Badge::Content{BadgeType::None});
-	}
 
 	initViewers(std::move(title));
 	setupChildGeometry();

@@ -10,6 +10,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 
 #include "fa/settings/fa_settings.h"
 #include "fa/settings_menu/sections/fa_chats.h"
+#include "fa/settings_menu/fa_settings_toggles.h"
 
 #include "fa/lang/fa_lang.h"
 
@@ -38,43 +39,6 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "api/api_blocked_peers.h"
 #include "ui/widgets/continuous_sliders.h"
 
-#define SettingsMenuJsonSwitch(LangKey, Option) container->add(object_ptr<Button>( \
-	container, \
-    FAlang::RplTranslate(QString(#LangKey)), \
-	st::settingsButtonNoIcon \
-))->toggleOn( \
-	rpl::single(::FASettings::JsonSettings::GetBool(#Option)) \
-)->toggledValue( \
-) | rpl::filter([](bool enabled) { \
-	return (enabled != ::FASettings::JsonSettings::GetBool(#Option)); \
-}) | rpl::start_with_next([](bool enabled) { \
-	::FASettings::JsonSettings::Write(); \
-	::FASettings::JsonSettings::Set(#Option, enabled); \
-	::FASettings::JsonSettings::Write(); \
-}, container->lifetime());
-
-#define RestartSettingsMenuJsonSwitch(LangKey, Option) container->add(object_ptr<Button>( \
-    container, \
-    FAlang::RplTranslate(QString(#LangKey)), \
-    st::settingsButtonNoIcon \
-))->toggleOn( \
-    rpl::single(::FASettings::JsonSettings::GetBool(#Option)) \
-)->toggledValue( \
-) | rpl::filter([](bool enabled) { \
-    return (enabled != ::FASettings::JsonSettings::GetBool(#Option)); \
-}) | rpl::start_with_next([=](bool enabled) { \
-    ::FASettings::JsonSettings::Write(); \
-    ::FASettings::JsonSettings::Set(#Option, enabled); \
-    ::FASettings::JsonSettings::Write(); \
-    controller->show(Ui::MakeConfirmBox({ \
-        .text = FAlang::RplTranslate(QString("fa_setting_need_restart")), \
-        .confirmed = [=] { \
-            ::Core::Restart(); \
-        }, \
-        .confirmText = FAlang::RplTranslate(QString("fa_restart")) \
-    })); \
-}, container->lifetime());
-
 namespace Settings {
 
     rpl::producer<QString> FAChats::title() {
@@ -91,44 +55,95 @@ namespace Settings {
     void FAChats::SetupChats(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller) {
         Ui::AddSubsectionTitle(container, FAlang::RplTranslate(QString("fa_chats")));
 
-		const auto recentStickersLimitLabel = container->add(
-			object_ptr<Ui::LabelSimple>(
-				container,
-				st::settingsAudioVolumeLabel),
-			st::settingsAudioVolumeLabelPadding);
-		const auto recentStickersLimitSlider = container->add(
-			object_ptr<Ui::MediaSlider>(
-				container,
-				st::settingsAudioVolumeSlider),
-			st::settingsAudioVolumeSliderPadding);
-		const auto updateRecentStickersLimitLabel = [=](int value) {
-			recentStickersLimitLabel->setText(
-				(value == 0)
-					? FAlang::Translate(QString("fa_recent_stickers_hidden"))
-					: FAlang::Translate(QString("fa_recent_stickers")).arg(value) );
+		FASettings::AddJsonSlider(
+			container,
+			u"recent_stickers_limit"_q,
+			[](int value) {
+				return (value == 0)
+					? FAlang::Translate(u"fa_recent_stickers_hidden"_q)
+					: FAlang::Translate(u"fa_recent_stickers"_q).arg(value);
+			});
+		const auto toggles = {
+			std::pair{ u"fa_disable_custom_chat_background"_q, u"disable_custom_chat_background"_q },
+			std::pair{ u"fa_hide_open_webapp_button_chatlist"_q, u"hide_open_webapp_button_chatlist"_q },
+			std::pair{ u"fa_show_discuss_button"_q, u"show_discuss_button"_q },
+			std::pair{ u"fa_show_message_details"_q, u"show_message_details"_q },
 		};
-        const auto updateRecentStickersLimitHeight = [=](int value) {
-			updateRecentStickersLimitLabel(value);
-			::FASettings::JsonSettings::Set("recent_stickers_limit", value);
-			::FASettings::JsonSettings::Write();
+		for (const auto &[langKey, option] : toggles) {
+			FASettings::AddJsonToggle(container, langKey, option);
+		}
+		FASettings::AddJsonRestartToggle(
+			container,
+			controller,
+			u"fa_hide_all_chats_folder"_q,
+			u"hide_all_chats_folder"_q);
+    }
+
+    void FAChats::SetupMediaBlur(not_null<Ui::VerticalLayout *> container) {
+		Ui::AddSkip(container);
+		Ui::AddDivider(container);
+		Ui::AddSkip(container);
+		Ui::AddSubsectionTitle(container, FAlang::RplTranslate(u"fa_media_blur"_q));
+		const auto toggles = {
+			std::pair{ u"fa_blur_photos"_q, u"blur_photos"_q },
+			std::pair{ u"fa_blur_videos"_q, u"blur_videos"_q },
+			std::pair{ u"fa_blur_stickers"_q, u"blur_stickers"_q },
+			std::pair{ u"fa_blur_files"_q, u"blur_files"_q },
 		};
-		recentStickersLimitSlider->resize(st::settingsAudioVolumeSlider.seekSize);
-		recentStickersLimitSlider->setPseudoDiscrete(
-			100+1,
-			[](int val) { return val; },
-			::FASettings::JsonSettings::GetInt("recent_stickers_limit"),
-			updateRecentStickersLimitHeight);
-		updateRecentStickersLimitLabel(::FASettings::JsonSettings::GetInt("recent_stickers_limit"));
-		SettingsMenuJsonSwitch(fa_disable_custom_chat_background, disable_custom_chat_background);
-		SettingsMenuJsonSwitch(fa_hide_open_webapp_button_chatlist, hide_open_webapp_button_chatlist);
-		SettingsMenuJsonSwitch(fa_show_discuss_button, show_discuss_button);
-		SettingsMenuJsonSwitch(fa_show_message_details, show_message_details);
-		RestartSettingsMenuJsonSwitch(fa_hide_all_chats_folder, hide_all_chats_folder);
+		for (const auto &[langKey, option] : toggles) {
+			FASettings::AddJsonToggle(container, langKey, option);
+		}
+		FASettings::AddJsonSlider(
+			container,
+			u"blur_strength"_q,
+			[](int value) {
+				return FAlang::Translate(u"fa_blur_strength"_q).arg(value);
+			});
+		Ui::AddDividerText(
+			container,
+			FAlang::RplTranslate(u"fa_media_blur_about"_q));
+    }
+
+    void FAChats::SetupHiddenMessages(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller) {
+		Ui::AddSkip(container);
+		Ui::AddSubsectionTitle(container, FAlang::RplTranslate(u"fa_hidden_messages"_q));
+		const auto store = &controller->session().faLocalStore();
+		auto count = rpl::single(
+			rpl::empty
+		) | rpl::then(
+			store->changes()
+		) | rpl::map([=] {
+			return QString::number(store->hiddenCount());
+		});
+		AddButtonWithLabel(
+			container,
+			FAlang::RplTranslate(u"fa_unhide_all_messages"_q),
+			std::move(count),
+			st::settingsButtonNoIcon
+		)->addClickHandler([=] {
+			if (!store->hiddenCount()) {
+				return;
+			}
+			controller->show(Ui::MakeConfirmBox({
+				.text = FAlang::RplTranslate(u"fa_unhide_all_messages_sure"_q),
+				.confirmed = [=](Fn<void()> close) {
+					store->unhideAll();
+					close();
+				},
+				.confirmText = FAlang::RplTranslate(u"fa_unhide"_q),
+			}));
+		});
+		Ui::AddSkip(container);
+		Ui::AddDividerText(
+			container,
+			FAlang::RplTranslate(u"fa_hidden_messages_about"_q));
     }
 
     void FAChats::SetupFAChats(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller) {
 		Ui::AddSkip(container);
     	SetupChats(container, controller);
+		SetupMediaBlur(container);
+		SetupHiddenMessages(container, controller);
     }
 
     void FAChats::setupContent(not_null<Window::SessionController *> controller) {

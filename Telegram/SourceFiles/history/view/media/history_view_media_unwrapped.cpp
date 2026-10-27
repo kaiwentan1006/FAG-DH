@@ -7,7 +7,9 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 */
 #include "history/view/media/history_view_media_unwrapped.h"
 
+#include "data/data_document.h"
 #include "data/data_session.h"
+#include "fa/ui/fa_media_blur.h"
 #include "history/history.h"
 #include "history/view/media/history_view_media_common.h"
 #include "history/view/media/history_view_sticker.h"
@@ -156,7 +158,15 @@ void UnwrappedMedia::draw(Painter &p, const PaintContext &context) const {
 		: _contentSize.height();
 	const auto inner = QRect(usex, usey, usew, useh);
 	if (context.skipDrawingParts != PaintContext::SkipDrawingParts::Content) {
-		_content->draw(p, context, inner);
+		const auto document = getDocument();
+		const auto blurred = document
+			&& document->sticker()
+			&& FAMediaBlur::IsBlurred(
+				FAMediaBlur::Kind::Sticker,
+				_parent->data());
+		FAMediaBlur::Paint(p, inner, blurred, [&](Painter &q) {
+			_content->draw(q, context, inner);
+		});
 	}
 
 	if (!inWebPage && (context.skipDrawingParts

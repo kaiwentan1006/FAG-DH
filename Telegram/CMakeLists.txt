@@ -745,12 +745,18 @@ PRIVATE
     export/view/export_view_top_bar.cpp
     export/view/export_view_top_bar.h
     fa/data/entities.h
+    fa/data/fa_local_actions.cpp
+    fa/data/fa_local_actions.h
+    fa/data/fa_local_store.cpp
+    fa/data/fa_local_store.h
     fa/utils/telegram_helpers.cpp
     fa/utils/telegram_helpers.h
     fa/utils/fa_profile_values.cpp
     fa/utils/fa_profile_values.h
     fa/settings_menu/fa_settings_menu.cpp
     fa/settings_menu/fa_settings_menu.h
+    fa/settings_menu/fa_settings_toggles.cpp
+    fa/settings_menu/fa_settings_toggles.h
     fa/settings/fa_settings.cpp
     fa/settings/fa_settings.h 
     fa/settings_menu/sections/fa_general.cpp 
@@ -767,6 +773,8 @@ PRIVATE
     fa/url_handlers/fa_url_handlers.h
     fa/lang/fa_lang.cpp
     fa/lang/fa_lang.h
+    fa/ui/fa_media_blur.cpp
+    fa/ui/fa_media_blur.h
     fa/ui/previews.cpp
     fa/ui/previews.h
     fa/fa_version.h

@@ -87,7 +87,7 @@ private:
 	rpl::event_stream<QString> _eventStream;
 	rpl::event_stream<QString> _pendingEventStream;
 	QHash<QString, QVariant> _settingsHashMap;
-	QHash<QString, QVariant> _defaultSettingsHashMap;
+	QHash<QString, QVariant> _pendingSettingsHashMap;
 
 };
 
@@ -118,27 +118,6 @@ enum SettingType {
 
 using CheckHandler = Fn<QVariant(QVariant)>;
 
-CheckHandler IntLimit(int min, int max, int defaultValue) {
-	return [=] (QVariant value) -> QVariant {
-		if (value.canConvert<int>()) {
-			auto intValue = value.toInt();
-			if (intValue < min) {
-				return min;
-			} else if (intValue > max) {
-				return max;
-			} else {
-				return value;
-			}
-		} else {
-			return defaultValue;
-		}
-	};
-}
-
-inline CheckHandler IntLimit(int min, int max) {
-	return IntLimit(min, max, min);
-}
-
 struct Definition {
 	SettingScope scope = SettingScope::Global;
 	SettingStorage storage = SettingStorage::MainJson;
@@ -146,6 +125,7 @@ struct Definition {
 	QVariant defaultValue;
 	QVariant fillerValue;
 	CheckHandler limitHandler = nullptr;
+	std::optional<IntRange> range;
 };
 
 const std::map<QString, Definition, std::greater<QString>> DefinitionMap {
@@ -197,7 +177,7 @@ const std::map<QString, Definition, std::greater<QString>> DefinitionMap {
 	{ "recent_stickers_limit", {
 		.type = SettingType::IntSetting,
 		.defaultValue = 30,
-		.limitHandler = IntLimit(0, 100, 30), }},
+		.range = IntRange{ 0, 100 }, }},
 	{ "use_default_rounding", {
 		.type = SettingType::BoolSetting,
 		.defaultValue = true, }},
@@ -207,13 +187,43 @@ const std::map<QString, Definition, std::greater<QString>> DefinitionMap {
 	{ "roundness", {
 		.type = SettingType::IntSetting,
 		.defaultValue = 50,
-		.limitHandler = IntLimit(0, 50, 50), }},
+		.range = IntRange{ 0, 50 }, }},
 	{ "force_snow", {
 		.type = SettingType::BoolSetting,
 		.defaultValue = false, }},
 	{ "show_message_details", {
 		.type = SettingType::BoolSetting,
 		.defaultValue = true, }},
+	{ "mark_read_after_action", {
+		.type = SettingType::BoolSetting,
+		.defaultValue = false, }},
+
+	//   Media blur
+	{ "blur_photos", {
+		.type = SettingType::BoolSetting,
+		.defaultValue = true, }},
+	{ "blur_videos", {
+		.type = SettingType::BoolSetting,
+		.defaultValue = true, }},
+	{ "blur_stickers", {
+		.type = SettingType::BoolSetting,
+		.defaultValue = true, }},
+	{ "blur_files", {
+		.type = SettingType::BoolSetting,
+		.defaultValue = true, }},
+	{ "blur_strength", {
+		.type = SettingType::IntSetting,
+		.defaultValue = 12,
+		.range = IntRange{ 2, 32 }, }},
+
+	//   FAgram service
+	{ "fagram_api_url", {
+		.type = SettingType::QStringSetting,
+		.defaultValue = u"https://api.fagram.app"_q, }},
+	{ "fagram_api_timeout", {
+		.type = SettingType::IntSetting,
+		.defaultValue = 5000,
+		.range = IntRange{ 1000, 60000 }, }},
 };
 
 using OldOptionKey = QString;
@@ -389,7 +399,7 @@ void Manager::load() {
 
 void Manager::fill() {
 	_settingsHashMap.reserve(DefinitionMap.size());
-	_defaultSettingsHashMap.reserve(DefinitionMap.size());
+	_pendingSettingsHashMap.reserve(DefinitionMap.size());
 
 	const auto addDefaultValue = [&] (const QString &option, QVariant value) {
 		_settingsHashMap.insert(option, value);
@@ -444,8 +454,8 @@ QVariant Manager::get(const QString &key, uint64 accountId, bool isTestAccount) 
 
 QVariant Manager::getWithPending(const QString &key, uint64 accountId, bool isTestAccount) {
 	const auto mapKey = MakeMapKey(key, accountId, isTestAccount);
-	auto result = _defaultSettingsHashMap.contains(mapKey)
-		? _defaultSettingsHashMap.value(mapKey)
+	auto result = _pendingSettingsHashMap.contains(mapKey)
+		? _pendingSettingsHashMap.value(mapKey)
 		: _settingsHashMap.contains(mapKey)
 		? _settingsHashMap.value(mapKey)
 		: QVariant();
@@ -461,11 +471,11 @@ QVariant Manager::getWithPending(const QString &key, uint64 accountId, bool isTe
 QVariantMap Manager::getAllWithPending(const QString &key) {
 	auto resultMap = QVariantMap();
 
-	if (_defaultSettingsHashMap.contains(key) || _settingsHashMap.contains(key)) {
+	if (_pendingSettingsHashMap.contains(key) || _settingsHashMap.contains(key)) {
 		resultMap.insert(
 			qsl("0"),
-			_defaultSettingsHashMap.contains(key)
-				? _defaultSettingsHashMap.value(key)
+			_pendingSettingsHashMap.contains(key)
+				? _pendingSettingsHashMap.value(key)
 				: _settingsHashMap.value(key));
 		return resultMap;
 	}
@@ -482,7 +492,7 @@ QVariantMap Manager::getAllWithPending(const QString &key) {
 		resultMap.insert(accountKey, i.value());
 	}
 
-	for (auto i = _defaultSettingsHashMap.constBegin(); i != _defaultSettingsHashMap.constEnd(); ++i) {
+	for (auto i = _pendingSettingsHashMap.constBegin(); i != _pendingSettingsHashMap.constEnd(); ++i) {
 		const auto mapKey = i.key();
 		if (!mapKey.startsWith(prefix)) {
 			continue;
@@ -544,10 +554,10 @@ void Manager::setAfterRestart(const QString &key, QVariant value, uint64 account
 	const auto mapKey = MakeMapKey(key, accountId, isTestAccount);
 	if (!_settingsHashMap.contains(mapKey)
 		|| _settingsHashMap.value(mapKey) != value) {
-		_defaultSettingsHashMap.insert(mapKey, value);
+		_pendingSettingsHashMap.insert(mapKey, value);
 	} else if (_settingsHashMap.contains(mapKey)
 		&& _settingsHashMap.value(mapKey) == value) {
-		_defaultSettingsHashMap.remove(mapKey);
+		_pendingSettingsHashMap.remove(mapKey);
 	}
 	_pendingEventStream.fire_copy(mapKey);
 }
@@ -653,6 +663,12 @@ bool Manager::readCustomFile() {
 		} else if (defType == SettingType::IntSetting) {
 			if (val.isDouble()) {
 				auto intValue = qFloor(val.toDouble());
+				if (def.range) {
+					intValue = std::clamp(
+						intValue,
+						def.range->min,
+						def.range->max);
+				}
 				set(key,
 					(def.limitHandler)
 						? def.limitHandler(intValue)
@@ -811,6 +827,18 @@ void ResetAfterRestart(const QString &key, uint64 accountId, bool isTestAccount)
 	if (!Data) return;
 
 	Data->resetAfterRestart(key, accountId, isTestAccount);
+}
+
+std::optional<IntRange> IntSettingRange(const QString &key) {
+	const auto i = DefinitionMap.find(key);
+	return (i != DefinitionMap.end()) ? i->second.range : std::nullopt;
+}
+
+std::optional<float64> UserpicRoundness() {
+	if (GetBool(qsl("use_default_rounding"))) {
+		return std::nullopt;
+	}
+	return GetInt(qsl("roundness")) / 100.;
 }
 
 } // namespace JsonSettings

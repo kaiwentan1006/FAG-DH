@@ -100,6 +100,9 @@ enum { // Local Storage Keys
 	lskInlineBotsDownloads = 0x1b, // no data
 	lskMediaLastPlaybackPositions = 0x1c, // no data
 	lskBotStorages = 0x1d, // data: PeerId botId
+
+	// FAgram keys are kept far from upstream ones to survive rebases.
+	lskFALocalData = 0x100, // no data
 };
 
 auto EmptyMessageDraftSources()
@@ -260,6 +263,7 @@ base::flat_set<QString> Account::collectGoodNames() const {
 		_roundPlaceholderKey,
 		_inlineBotsDownloadsKey,
 		_mediaLastPlaybackPositionsKey,
+		_faLocalDataKey,
 	};
 	auto result = base::flat_set<QString>{
 		"map0",
@@ -354,6 +358,7 @@ Account::ReadMapResult Account::readMapWith(
 	quint64 roundPlaceholderKey = 0;
 	quint64 inlineBotsDownloadsKey = 0;
 	quint64 mediaLastPlaybackPositionsKey = 0;
+	quint64 faLocalDataKey = 0;
 	QByteArray webviewStorageTokenBots, webviewStorageTokenOther;
 	while (!map.stream.atEnd()) {
 		quint32 keyType;
@@ -472,6 +477,9 @@ Account::ReadMapResult Account::readMapWith(
 		case lskMediaLastPlaybackPositions: {
 			map.stream >> mediaLastPlaybackPositionsKey;
 		} break;
+		case lskFALocalData: {
+			map.stream >> faLocalDataKey;
+		} break;
 		case lskWebviewTokens: {
 			map.stream
 				>> webviewStorageTokenBots
@@ -530,6 +538,7 @@ Account::ReadMapResult Account::readMapWith(
 	_roundPlaceholderKey = roundPlaceholderKey;
 	_inlineBotsDownloadsKey = inlineBotsDownloadsKey;
 	_mediaLastPlaybackPositionsKey = mediaLastPlaybackPositionsKey;
+	_faLocalDataKey = faLocalDataKey;
 	_oldMapVersion = mapData.version;
 	_webviewStorageIdBots.token = webviewStorageTokenBots;
 	_webviewStorageIdOther.token = webviewStorageTokenOther;
@@ -647,6 +656,7 @@ void Account::writeMap() {
 	if (_roundPlaceholderKey) mapSize += sizeof(quint32) + sizeof(quint64);
 	if (_inlineBotsDownloadsKey) mapSize += sizeof(quint32) + sizeof(quint64);
 	if (_mediaLastPlaybackPositionsKey) mapSize += sizeof(quint32) + sizeof(quint64);
+	if (_faLocalDataKey) mapSize += sizeof(quint32) + sizeof(quint64);
 	if (!_botStoragesMap.empty()) mapSize += sizeof(quint32) * 2 + _botStoragesMap.size() * sizeof(quint64) * 2;
 
 	EncryptedDescriptor mapData(mapSize);
@@ -730,6 +740,10 @@ void Account::writeMap() {
 		mapData.stream << quint32(lskMediaLastPlaybackPositions);
 		mapData.stream << quint64(_mediaLastPlaybackPositionsKey);
 	}
+	if (_faLocalDataKey) {
+		mapData.stream << quint32(lskFALocalData);
+		mapData.stream << quint64(_faLocalDataKey);
+	}
 	if (!_botStoragesMap.empty()) {
 		mapData.stream << quint32(lskBotStorages) << quint32(_botStoragesMap.size());
 		for (const auto &[key, value] : _botStoragesMap) {
@@ -770,6 +784,7 @@ void Account::reset() {
 	_roundPlaceholderKey = 0;
 	_inlineBotsDownloadsKey = 0;
 	_mediaLastPlaybackPositionsKey = 0;
+	_faLocalDataKey = 0;
 	_oldMapVersion = 0;
 	_fileLocations.clear();
 	_fileLocationPairs.clear();
@@ -3551,6 +3566,40 @@ void Account::writeInlineBotsDownloads(const QByteArray &bytes) {
 	EncryptedDescriptor data(size);
 	data.stream << bytes;
 	FileWriteDescriptor file(_inlineBotsDownloadsKey, _basePath);
+	file.writeEncrypted(data, _localKey);
+}
+
+QByteArray Account::readFALocalData() {
+	if (!_faLocalDataKey) {
+		return QByteArray();
+	}
+
+	FileReadDescriptor faLocalData;
+	if (!ReadEncryptedFile(
+			faLocalData,
+			_faLocalDataKey,
+			_basePath,
+			_localKey)) {
+		ClearKey(_faLocalDataKey, _basePath);
+		_faLocalDataKey = 0;
+		writeMapDelayed();
+		return QByteArray();
+	}
+
+	auto bytes = QByteArray();
+	faLocalData.stream >> bytes;
+	return bytes;
+}
+
+void Account::writeFALocalData(const QByteArray &bytes) {
+	if (!_faLocalDataKey) {
+		_faLocalDataKey = GenerateKey(_basePath);
+		writeMapQueued();
+	}
+	quint32 size = Serialize::bytearraySize(bytes);
+	EncryptedDescriptor data(size);
+	data.stream << bytes;
+	FileWriteDescriptor file(_faLocalDataKey, _basePath);
 	file.writeEncrypted(data, _localKey);
 }
 

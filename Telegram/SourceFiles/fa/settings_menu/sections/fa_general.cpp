@@ -10,6 +10,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 
 #include "fa/settings/fa_settings.h"
 #include "fa/settings_menu/sections/fa_general.h"
+#include "fa/settings_menu/fa_settings_toggles.h"
 
 #include "fa/lang/fa_lang.h"
 
@@ -38,43 +39,6 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "api/api_blocked_peers.h"
 #include "ui/widgets/continuous_sliders.h"
 
-#define SettingsMenuJsonSwitch(LangKey, Option) container->add(object_ptr<Button>( \
-	container, \
-    FAlang::RplTranslate(QString(#LangKey)), \
-	st::settingsButtonNoIcon \
-))->toggleOn( \
-	rpl::single(::FASettings::JsonSettings::GetBool(#Option)) \
-)->toggledValue( \
-) | rpl::filter([](bool enabled) { \
-	return (enabled != ::FASettings::JsonSettings::GetBool(#Option)); \
-}) | rpl::start_with_next([](bool enabled) { \
-	::FASettings::JsonSettings::Write(); \
-	::FASettings::JsonSettings::Set(#Option, enabled); \
-	::FASettings::JsonSettings::Write(); \
-}, container->lifetime());
-
-#define RestartSettingsMenuJsonSwitch(LangKey, Option) container->add(object_ptr<Button>( \
-    container, \
-    FAlang::RplTranslate(QString(#LangKey)), \
-    st::settingsButtonNoIcon \
-))->toggleOn( \
-    rpl::single(::FASettings::JsonSettings::GetBool(#Option)) \
-)->toggledValue( \
-) | rpl::filter([](bool enabled) { \
-    return (enabled != ::FASettings::JsonSettings::GetBool(#Option)); \
-}) | rpl::start_with_next([=](bool enabled) { \
-    ::FASettings::JsonSettings::Write(); \
-    ::FASettings::JsonSettings::Set(#Option, enabled); \
-    ::FASettings::JsonSettings::Write(); \
-    controller->show(Ui::MakeConfirmBox({ \
-        .text = FAlang::RplTranslate(QString("fa_setting_need_restart")), \
-        .confirmed = [=] { \
-            ::Core::Restart(); \
-        }, \
-        .confirmText = FAlang::RplTranslate(QString("fa_restart")) \
-    })); \
-}, container->lifetime());
-
 namespace Settings {
 
     rpl::producer<QString> FAGeneral::title() {
@@ -91,16 +55,26 @@ namespace Settings {
     void FAGeneral::SetupGeneral(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller) {
         Ui::AddSubsectionTitle(container, FAlang::RplTranslate(QString("fa_general")));
 
-		SettingsMenuJsonSwitch(fa_show_seconds_message, seconds_message);
-        SettingsMenuJsonSwitch(fa_disable_ads, disable_ads);
-        SettingsMenuJsonSwitch(fa_show_start_token, show_start_token);
-        SettingsMenuJsonSwitch(fa_show_peer_ids, show_peer_id);
-        SettingsMenuJsonSwitch(fa_show_dc_ids, show_dc_id);
-        SettingsMenuJsonSwitch(fa_id_in_botapi_type, show_id_botapi);
-        SettingsMenuJsonSwitch(fa_local_tg_premium, local_premium);
-        SettingsMenuJsonSwitch(fa_show_registration_date, show_registration_date);
-        SettingsMenuJsonSwitch(fa_hide_phone_in_settings, hide_phone_number);
-        RestartSettingsMenuJsonSwitch(fa_hide_stories, hide_stories);
+		const auto toggles = {
+			std::pair{ u"fa_show_seconds_message"_q, u"seconds_message"_q },
+			std::pair{ u"fa_disable_ads"_q, u"disable_ads"_q },
+			std::pair{ u"fa_show_start_token"_q, u"show_start_token"_q },
+			std::pair{ u"fa_show_peer_ids"_q, u"show_peer_id"_q },
+			std::pair{ u"fa_show_dc_ids"_q, u"show_dc_id"_q },
+			std::pair{ u"fa_id_in_botapi_type"_q, u"show_id_botapi"_q },
+			std::pair{ u"fa_local_tg_premium"_q, u"local_premium"_q },
+			std::pair{ u"fa_show_registration_date"_q, u"show_registration_date"_q },
+			std::pair{ u"fa_hide_phone_in_settings"_q, u"hide_phone_number"_q },
+			std::pair{ u"fa_mark_read_after_action"_q, u"mark_read_after_action"_q },
+		};
+		for (const auto &[langKey, option] : toggles) {
+			FASettings::AddJsonToggle(container, langKey, option);
+		}
+		FASettings::AddJsonRestartToggle(
+			container,
+			controller,
+			u"fa_hide_stories"_q,
+			u"hide_stories"_q);
     }
 
     void FAGeneral::SetupFAGeneral(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller) {

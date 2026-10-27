@@ -10,6 +10,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 
 #include "fa/settings/fa_settings.h"
 #include "fa/settings_menu/sections/fa_appearance.h"
+#include "fa/settings_menu/fa_settings_toggles.h"
 #include "fa/ui/previews.h"
 
 #include "fa/lang/fa_lang.h"
@@ -39,43 +40,6 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "api/api_blocked_peers.h"
 #include "ui/widgets/continuous_sliders.h"
 
-#define SettingsMenuJsonSwitch(LangKey, Option) container->add(object_ptr<Button>( \
-	container, \
-    FAlang::RplTranslate(QString(#LangKey)), \
-	st::settingsButtonNoIcon \
-))->toggleOn( \
-	rpl::single(::FASettings::JsonSettings::GetBool(#Option)) \
-)->toggledValue( \
-) | rpl::filter([](bool enabled) { \
-	return (enabled != ::FASettings::JsonSettings::GetBool(#Option)); \
-}) | rpl::start_with_next([](bool enabled) { \
-	::FASettings::JsonSettings::Write(); \
-	::FASettings::JsonSettings::Set(#Option, enabled); \
-	::FASettings::JsonSettings::Write(); \
-}, container->lifetime());
-
-#define RestartSettingsMenuJsonSwitch(LangKey, Option) container->add(object_ptr<Button>( \
-    container, \
-    FAlang::RplTranslate(QString(#LangKey)), \
-    st::settingsButtonNoIcon \
-))->toggleOn( \
-    rpl::single(::FASettings::JsonSettings::GetBool(#Option)) \
-)->toggledValue( \
-) | rpl::filter([](bool enabled) { \
-    return (enabled != ::FASettings::JsonSettings::GetBool(#Option)); \
-}) | rpl::start_with_next([=](bool enabled) { \
-    ::FASettings::JsonSettings::Write(); \
-    ::FASettings::JsonSettings::Set(#Option, enabled); \
-    ::FASettings::JsonSettings::Write(); \
-    controller->show(Ui::MakeConfirmBox({ \
-        .text = FAlang::RplTranslate(QString("fa_setting_need_restart")), \
-        .confirmed = [=] { \
-            ::Core::Restart(); \
-        }, \
-        .confirmText = FAlang::RplTranslate(QString("fa_restart")) \
-    })); \
-}, container->lifetime());
-
 namespace Settings {
 
     rpl::producer<QString> FAAppearance::title() {
@@ -95,38 +59,23 @@ namespace Settings {
 		const auto roundnessPreview = container->add(
 			object_ptr<RoundnessPreview>(container),
 			st::defaultSubsectionTitlePadding);
-        
-    	const auto userpicRoundnessLabel = container->add(
-			object_ptr<Ui::LabelSimple>(
-				container,
-				st::settingsAudioVolumeLabel),
-			st::settingsAudioVolumeLabelPadding);
-    	const auto userpicRoundnessSlider = container->add(
-			object_ptr<Ui::MediaSlider>(
-				container,
-				st::settingsAudioVolumeSlider),
-			st::settingsAudioVolumeSliderPadding);
-
-		const auto updateUserpicRoundnessLabel = [=](int value) {
-    		const auto radius = QString::number(value);
-    		userpicRoundnessLabel->setText(FAlang::Translate(QString("fa_rounding")).arg(radius));
-    	};
-    	const auto updateUserpicRoundness = [=](int value) {
-    		updateUserpicRoundnessLabel(value);
-			roundnessPreview->repaint();
-    		::FASettings::JsonSettings::Set("roundness", value);
-    		::FASettings::JsonSettings::Write();
-    	};
-    	userpicRoundnessSlider->resize(st::settingsAudioVolumeSlider.seekSize);
-    	userpicRoundnessSlider->setPseudoDiscrete(
-			51,
-			[](int val) { return val; },
-			::FASettings::JsonSettings::GetInt("roundness"),
-			updateUserpicRoundness);
-    	updateUserpicRoundnessLabel(::FASettings::JsonSettings::GetInt("roundness"));
+		FASettings::AddJsonSlider(
+			container,
+			u"roundness"_q,
+			[](int value) {
+				return FAlang::Translate(u"fa_rounding"_q).arg(value);
+			},
+			[=](int) { roundnessPreview->repaint(); });
         Ui::AddDivider(container);
-		RestartSettingsMenuJsonSwitch(fa_use_default_rounding, use_default_rounding);
-		SettingsMenuJsonSwitch(fa_force_snow, force_snow);
+		FASettings::AddJsonRestartToggle(
+			container,
+			controller,
+			u"fa_use_default_rounding"_q,
+			u"use_default_rounding"_q);
+		FASettings::AddJsonToggle(
+			container,
+			u"fa_force_snow"_q,
+			u"force_snow"_q);
     }
 
     void FAAppearance::SetupFAAppearance(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller) {

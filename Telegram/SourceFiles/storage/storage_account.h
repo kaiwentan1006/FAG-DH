@@ -192,6 +192,9 @@ public:
 	[[nodiscard]] QByteArray readInlineBotsDownloads();
 	void writeInlineBotsDownloads(const QByteArray &bytes);
 
+	[[nodiscard]] QByteArray readFALocalData();
+	void writeFALocalData(const QByteArray &bytes);
+
 	void writeBotStorage(PeerId botId, const QByteArray &serialized);
 	[[nodiscard]] QByteArray readBotStorage(PeerId botId);
 
@@ -331,6 +334,7 @@ private:
 	FileKey _roundPlaceholderKey = 0;
 	FileKey _inlineBotsDownloadsKey = 0;
 	FileKey _mediaLastPlaybackPositionsKey = 0;
+	FileKey _faLocalDataKey = 0;
 
 	qint64 _cacheTotalSizeLimit = 0;
 	qint64 _cacheBigFileTotalSizeLimit = 0;
