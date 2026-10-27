@@ -28,6 +28,7 @@ namespace Settings {
 
     private:
         void SetupGeneral(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller);
+        void SetupPrivacy(not_null<Ui::VerticalLayout *> container);
         
         void SetupFAGeneral(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> null);
         void setupContent(not_null<Window::SessionController *> controller);

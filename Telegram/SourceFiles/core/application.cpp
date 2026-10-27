@@ -8,6 +8,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "core/application.h"
 
 #include "fa/lang/fa_lang.h"
+#include "fa/utils/fa_capture_protection.h"
 
 #include "data/data_abstract_structure.h"
 #include "data/data_channel.h"
@@ -268,6 +269,9 @@ void Application::run() {
 	) | rpl::start_with_next([] {
 		FAlang::Load(Lang::GetInstance().baseId(), Lang::GetInstance().id());
 	}, _lifetime);
+
+	// Before any window is created, so none of them is ever captured.
+	FACaptureProtection::Start();
 
 	style::SetCustomFont(settings().customFontFamily());
 	style::internal::StartFonts();

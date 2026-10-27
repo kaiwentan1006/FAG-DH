@@ -95,5 +95,8 @@
     "fa_show_hidden_senders": "Show hidden senders (%1)",
     "fa_unhide_all_senders": "Show all hidden senders",
     "fa_unhide_all_senders_sure": "Show messages from every sender you have hidden on this device again?",
-    "fa_hide_membership_messages": "Hide join and leave messages"
+    "fa_hide_membership_messages": "Hide join and leave messages",
+    "fa_privacy": "Privacy",
+    "fa_screen_capture_protection": "Hide from screen capture",
+    "fa_screen_capture_protection_about": "FAgram windows stay visible on your monitor but appear empty in screenshots, screen recordings, screen sharing and remote desktop apps."
 }

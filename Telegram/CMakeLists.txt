@@ -751,6 +751,8 @@ PRIVATE
     fa/data/fa_local_store.h
     fa/utils/telegram_helpers.cpp
     fa/utils/telegram_helpers.h
+    fa/utils/fa_capture_protection.cpp
+    fa/utils/fa_capture_protection.h
     fa/utils/fa_profile_values.cpp
     fa/utils/fa_profile_values.h
     fa/settings_menu/fa_settings_menu.cpp

@@ -11,6 +11,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "fa/settings/fa_settings.h"
 #include "fa/settings_menu/sections/fa_general.h"
 #include "fa/settings_menu/fa_settings_toggles.h"
+#include "fa/utils/fa_capture_protection.h"
 
 #include "fa/lang/fa_lang.h"
 
@@ -77,9 +78,28 @@ namespace Settings {
 			u"hide_stories"_q);
     }
 
+    void FAGeneral::SetupPrivacy(not_null<Ui::VerticalLayout *> container) {
+		if (!FACaptureProtection::Supported()) {
+			return;
+		}
+		Ui::AddSkip(container);
+		Ui::AddDivider(container);
+		Ui::AddSkip(container);
+		Ui::AddSubsectionTitle(container, FAlang::RplTranslate(QString("fa_privacy")));
+		FASettings::AddJsonToggle(
+			container,
+			u"fa_screen_capture_protection"_q,
+			u"screen_capture_protection"_q);
+		Ui::AddSkip(container);
+		Ui::AddDividerText(
+			container,
+			FAlang::RplTranslate(QString("fa_screen_capture_protection_about")));
+    }
+
     void FAGeneral::SetupFAGeneral(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller) {
 		Ui::AddSkip(container);
     	SetupGeneral(container, controller);
+    	SetupPrivacy(container);
     }
 
     void FAGeneral::setupContent(not_null<Window::SessionController *> controller) {

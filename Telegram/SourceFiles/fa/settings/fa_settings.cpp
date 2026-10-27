@@ -200,6 +200,9 @@ const std::map<QString, Definition, std::greater<QString>> DefinitionMap {
 	{ "hide_membership_messages", {
 		.type = SettingType::BoolSetting,
 		.defaultValue = false, }},
+	{ "screen_capture_protection", {
+		.type = SettingType::BoolSetting,
+		.defaultValue = true, }},
 
 	//   Media blur
 	{ "blur_photos", {
