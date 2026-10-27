@@ -9,6 +9,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "fa/utils/fa_capture_protection.h"
 
 #include "fa/settings/fa_settings.h"
+#include "core/application.h"
+#include "window/notifications_manager.h"
 
 #include <QtGui/QGuiApplication>
 #include <QtGui/QWindow>
@@ -16,6 +18,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 
 #ifdef Q_OS_WIN
 #include <windows.h>
+#include <dwmapi.h>
 
 // Available since Windows 10 2004, older SDK headers lack it.
 #ifndef WDA_EXCLUDEFROMCAPTURE
@@ -30,9 +33,12 @@ namespace {
 	return u"screen_capture_protection"_q;
 }
 
-[[nodiscard]] bool Enabled() {
-	return FASettings::JsonSettings::GetBool(SettingKey());
+#ifdef Q_OS_WIN
+void SetDwmFlag(HWND hwnd, DWORD attribute, bool value) {
+	const auto flag = BOOL(value ? TRUE : FALSE);
+	DwmSetWindowAttribute(hwnd, attribute, &flag, sizeof(flag));
 }
+#endif // Q_OS_WIN
 
 void Apply(not_null<QWindow*> window, bool enabled) {
 #ifdef Q_OS_WIN
@@ -46,8 +52,19 @@ void Apply(not_null<QWindow*> window, bool enabled) {
 		SetWindowDisplayAffinity(hwnd, WDA_NONE);
 	} else if (!SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)) {
 		// Before Windows 10 2004 the window is captured as a black area.
-		SetWindowDisplayAffinity(hwnd, WDA_MONITOR);
+		if (!SetWindowDisplayAffinity(hwnd, WDA_MONITOR)) {
+			LOG(("FA Capture Protection: "
+				"SetWindowDisplayAffinity failed, error %1."
+				).arg(GetLastError()));
+		}
 	}
+
+	// Taskbar thumbnails, Alt+Tab and Peek are drawn by the shell from
+	// the window content, not affected by the display affinity.
+	// The main window draws its own static preview on top of this,
+	// see Platform::MainWindow::setupPreviewPasscodeLock.
+	SetDwmFlag(hwnd, DWMWA_FORCE_ICONIC_REPRESENTATION, enabled);
+	SetDwmFlag(hwnd, DWMWA_DISALLOW_PEEK, enabled);
 #endif // Q_OS_WIN
 }
 
@@ -60,11 +77,15 @@ void ApplyToAll(bool enabled) {
 class Protector final : public QObject {
 public:
 	explicit Protector(QObject *parent) : QObject(parent) {
-		ApplyToAll(Enabled());
+		ApplyToAll(Active());
+
+		// Subscribed before any window, so the windows that refine
+		// the defaults from ApplyToAll() get the change after it.
 		FASettings::JsonSettings::Events(
 			SettingKey()
 		) | rpl::start_with_next([](const QString &) {
-			ApplyToAll(Enabled());
+			ApplyToAll(Active());
+			Core::App().notifications().createManager();
 		}, _lifetime);
 	}
 
@@ -75,7 +96,7 @@ protected:
 			&& static_cast<QPlatformSurfaceEvent*>(
 				event)->surfaceEventType()
 					== QPlatformSurfaceEvent::SurfaceCreated
-			&& Enabled()) {
+			&& Active()) {
 			Apply(static_cast<QWindow*>(object), true);
 		}
 		return QObject::eventFilter(object, event);
@@ -106,6 +127,23 @@ bool Supported() {
 #else // Q_OS_WIN
 	return false;
 #endif // Q_OS_WIN
+}
+
+bool Active() {
+	return Supported()
+		&& FASettings::JsonSettings::GetBool(SettingKey());
+}
+
+rpl::producer<bool> ActiveValue() {
+	return rpl::single(
+		Active()
+	) | rpl::then(
+		FASettings::JsonSettings::Events(
+			SettingKey()
+		) | rpl::map([](const QString &) {
+			return Active();
+		})
+	) | rpl::distinct_until_changed();
 }
 
 } // namespace FACaptureProtection

@@ -35,6 +35,7 @@ public:
 
 	void destroyedFromSystem();
 
+	[[nodiscard]] bool hidePreviewContent() const;
 	bool setDwmThumbnail(QSize size);
 	bool setDwmPreview(QSize size, int radius);
 

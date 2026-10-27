@@ -11,6 +11,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "base/qt/qt_key_modifiers.h"
 #include "platform/platform_notifications_manager.h"
 #include "window/notifications_manager_default.h"
+#include "fa/utils/fa_capture_protection.h"
 #include "media/audio/media_audio_track.h"
 #include "media/audio/media_audio.h"
 #include "mtproto/mtproto_config.h"
@@ -192,9 +193,13 @@ void System::setManager(Fn<std::unique_ptr<Manager>()> create) {
 		Ensures(_manager != nullptr);
 	});
 
+	// System drawn notifications can't be hidden from screen capture.
+	const auto nativeAllowed = Platform::Notifications::Enforced()
+		|| !FACaptureProtection::Active();
 	if ((Core::App().settings().nativeNotifications()
 				|| Platform::Notifications::Enforced())
-			&& Platform::Notifications::Supported()) {
+			&& Platform::Notifications::Supported()
+			&& nativeAllowed) {
 		if (_manager->type() == ManagerType::Native) {
 			return;
 		}

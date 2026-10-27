@@ -98,5 +98,5 @@
     "fa_hide_membership_messages": "Hide join and leave messages",
     "fa_privacy": "Privacy",
     "fa_screen_capture_protection": "Hide from screen capture",
-    "fa_screen_capture_protection_about": "FAgram windows stay visible on your monitor but appear empty in screenshots, screen recordings, screen sharing and remote desktop apps."
+    "fa_screen_capture_protection_about": "FAgram windows stay visible on your monitor but appear empty in screenshots, screen recordings, screen sharing and remote desktop apps. While this is on, taskbar and Alt+Tab previews show only the logo, and notifications are shown by FAgram instead of Windows."
 }

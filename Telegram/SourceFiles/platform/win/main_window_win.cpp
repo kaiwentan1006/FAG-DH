@@ -29,6 +29,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "window/themes/window_theme.h"
 #include "window/window_controller.h"
 #include "history/history.h"
+#include "fa/utils/fa_capture_protection.h"
 
 #include <QtWidgets/QStyleFactory>
 #include <QtWidgets/QApplication>
@@ -220,7 +221,7 @@ bool EventFilter::mainWindowEvent(
 	} return false;
 
 	case WM_DWMSENDICONICTHUMBNAIL: {
-		if (!Core::App().passcodeLocked()) {
+		if (!_window->hidePreviewContent()) {
 			return false;
 		}
 		const auto size = QSize(int(HIWORD(lParam)), int(LOWORD(lParam)));
@@ -228,7 +229,7 @@ bool EventFilter::mainWindowEvent(
 	}
 
 	case WM_DWMSENDICONICLIVEPREVIEWBITMAP: {
-		if (!Core::App().passcodeLocked()) {
+		if (!_window->hidePreviewContent()) {
 			return false;
 		}
 		const auto size = DetectRealSize(hWnd);
@@ -310,11 +311,18 @@ MainWindow::MainWindow(not_null<Window::Controller*> controller)
 	setupPreviewPasscodeLock();
 }
 
+bool MainWindow::hidePreviewContent() const {
+	return Core::App().passcodeLocked() || FACaptureProtection::Active();
+}
+
 void MainWindow::setupPreviewPasscodeLock() {
-	Core::App().passcodeLockValue(
-	) | rpl::start_with_next([=](bool locked) {
-		// Use iconic bitmap instead of the window content if passcoded.
-		BOOL fForceIconic = locked ? TRUE : FALSE;
+	rpl::combine(
+		Core::App().passcodeLockValue(),
+		FACaptureProtection::ActiveValue()
+	) | rpl::start_with_next([=](bool locked, bool protectedFromCapture) {
+		// Use iconic bitmap instead of the window content if passcoded
+		// or hidden from screen capture.
+		BOOL fForceIconic = (locked || protectedFromCapture) ? TRUE : FALSE;
 		BOOL fHasIconicBitmap = fForceIconic;
 		DwmSetWindowAttribute(
 			_hWnd,
