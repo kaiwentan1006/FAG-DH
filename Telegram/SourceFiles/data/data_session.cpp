@@ -2033,6 +2033,17 @@ void Session::requestItemViewsRefresh(
 	}
 }
 
+void Session::requestItemViewsRepaint(
+		Fn<bool(not_null<const HistoryItem*>)> filter) {
+	for (const auto &[item, views] : _views) {
+		if (filter(item)) {
+			for (const auto view : views) {
+				requestViewRepaint(view);
+			}
+		}
+	}
+}
+
 void Session::notifyItemDataChange(not_null<HistoryItem*> item) {
 	_itemDataChanges.fire_copy(item);
 }

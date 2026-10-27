@@ -889,7 +889,8 @@ Image *MediaPhoto::replyPreview() const {
 }
 
 bool MediaPhoto::replyPreviewLoaded() const {
-	return _photo->replyPreviewLoaded(_spoiler);
+	return _photo->replyPreviewLoaded(
+		_spoiler || FAMediaBlur::IsItemMediaBlurred(parent()));
 }
 
 TextWithEntities MediaPhoto::notificationText() const {
@@ -1140,7 +1141,8 @@ Image *MediaFile::replyPreview() const {
 }
 
 bool MediaFile::replyPreviewLoaded() const {
-	return _document->replyPreviewLoaded(_spoiler);
+	return _document->replyPreviewLoaded(
+		_spoiler || FAMediaBlur::IsItemMediaBlurred(parent()));
 }
 
 ItemPreview MediaFile::toPreview(ToPreviewOptions options) const {
@@ -1901,7 +1903,7 @@ Image *MediaWebPage::replyPreview() const {
 }
 
 bool MediaWebPage::replyPreviewLoaded() const {
-	const auto spoiler = false;
+	const auto spoiler = FAMediaBlur::IsItemMediaBlurred(parent());
 	if (const auto document = MediaWebPage::document()) {
 		return document->replyPreviewLoaded(spoiler);
 	} else if (const auto photo = MediaWebPage::photo()) {
@@ -2029,7 +2031,7 @@ Image *MediaGame::replyPreview() const {
 }
 
 bool MediaGame::replyPreviewLoaded() const {
-	const auto spoiler = false;
+	const auto spoiler = FAMediaBlur::IsItemMediaBlurred(parent());
 	if (const auto document = _game->document) {
 		return document->replyPreviewLoaded(spoiler);
 	} else if (const auto photo = _game->photo) {
@@ -2147,7 +2149,7 @@ Image *MediaInvoice::replyPreview() const {
 }
 
 bool MediaInvoice::replyPreviewLoaded() const {
-	const auto spoiler = false;
+	const auto spoiler = FAMediaBlur::IsItemMediaBlurred(parent());
 	if (const auto photo = _invoice.photo) {
 		return photo->replyPreviewLoaded(spoiler);
 	}

@@ -11,6 +11,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "fa/settings/fa_settings.h"
 #include "fa/settings_menu/sections/fa_chats.h"
 #include "fa/settings_menu/fa_settings_toggles.h"
+#include "fa/data/fa_local_store.h"
 
 #include "fa/lang/fa_lang.h"
 

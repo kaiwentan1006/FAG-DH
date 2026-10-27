@@ -52,6 +52,7 @@ private:
 	void refreshViews(const std::vector<FullMsgId> &ids) const;
 	void refreshChatViews(base::flat_set<PeerId> chats) const;
 	void repaintMedia(FullMsgId id) const;
+	void refreshAllMedia() const;
 
 	const not_null<Main::Session*> _session;
 	base::flat_set<FullMsgId> _hidden;

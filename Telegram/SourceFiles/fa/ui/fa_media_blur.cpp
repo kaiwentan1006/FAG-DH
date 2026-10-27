@@ -75,6 +75,19 @@ namespace {
 
 } // namespace
 
+std::vector<QString> KindSettingKeys() {
+	return {
+		SettingKey(Kind::Photo),
+		SettingKey(Kind::Video),
+		SettingKey(Kind::Sticker),
+		SettingKey(Kind::File),
+	};
+}
+
+QString StrengthSettingKey() {
+	return u"blur_strength"_q;
+}
+
 std::optional<Kind> KindOf(not_null<const HistoryView::Media*> media) {
 	const auto raw = media.get();
 	if (dynamic_cast<const HistoryView::Photo*>(raw)) {
@@ -150,7 +163,7 @@ void Paint(
 		return;
 	}
 	const auto downscale = FASettings::JsonSettings::GetInt(
-		u"blur_strength"_q);
+		StrengthSettingKey());
 	const auto full = area.size() * style::DevicePixelRatio();
 	const auto small = QSize(
 		std::max(full.width() / downscale, 1),
@@ -172,6 +185,25 @@ void Paint(
 	p.drawImage(area, image);
 }
 
+void PaintKeepingOutside(
+		Painter &p,
+		QRect area,
+		QRect outer,
+		bool blurred,
+		Fn<void(Painter&)> paint) {
+	if (!blurred || area.isEmpty()) {
+		paint(p);
+		return;
+	}
+	p.save();
+	p.setClipRegion(
+		QRegion(outer).subtracted(QRegion(area)),
+		Qt::IntersectClip);
+	paint(p);
+	p.restore();
+	Paint(p, area, true, paint);
+}
+
 QImage BlurImage(QImage image) {
 	if (image.isNull()) {
 		return image;
@@ -179,7 +211,7 @@ QImage BlurImage(QImage image) {
 	const auto ratio = image.devicePixelRatio();
 	const auto size = image.size();
 	const auto downscale = FASettings::JsonSettings::GetInt(
-		u"blur_strength"_q);
+		StrengthSettingKey());
 	auto small = image.scaled(
 		std::max(size.width() / downscale, 1),
 		std::max(size.height() / downscale, 1),

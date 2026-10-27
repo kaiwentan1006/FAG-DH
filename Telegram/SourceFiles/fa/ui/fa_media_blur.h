@@ -34,6 +34,10 @@ enum class Kind {
 [[nodiscard]] std::optional<Kind> KindOf(
 	not_null<const HistoryView::Media*> media);
 
+// Settings that choose which kinds of media are blurred.
+[[nodiscard]] std::vector<QString> KindSettingKeys();
+[[nodiscard]] QString StrengthSettingKey();
+
 [[nodiscard]] bool IsBlurred(Kind kind, not_null<const HistoryItem*> item);
 [[nodiscard]] bool IsBlurred(
 	not_null<const HistoryView::Media*> media,
@@ -50,6 +54,15 @@ enum class Kind {
 void Paint(
 	Painter &p,
 	QRect area,
+	bool blurred,
+	Fn<void(Painter&)> paint);
+
+// For media drawing its controls (time, share button) outside of its own
+// rect: the part of `outer` around `area` is painted without the blur.
+void PaintKeepingOutside(
+	Painter &p,
+	QRect area,
+	QRect outer,
 	bool blurred,
 	Fn<void(Painter&)> paint);
 

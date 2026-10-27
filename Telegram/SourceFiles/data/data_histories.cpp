@@ -141,6 +141,12 @@ History *Histories::find(PeerId peerId) {
 	return (i != end(_map)) ? i->second.get() : nullptr;
 }
 
+void Histories::enumerate(Fn<void(not_null<History*>)> action) const {
+	for (const auto &[peerId, history] : _map) {
+		action(history.get());
+	}
+}
+
 not_null<History*> Histories::findOrCreate(PeerId peerId) {
 	Expects(peerId != 0);
 

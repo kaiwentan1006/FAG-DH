@@ -9,9 +9,11 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "fa/data/fa_local_store.h"
 
 #include "fa/settings/fa_settings.h"
+#include "fa/ui/fa_media_blur.h"
 
 #include "data/data_forum_topic.h"
 #include "data/data_groups.h"
+#include "data/data_histories.h"
 #include "data/data_peer.h"
 #include "data/data_saved_sublist.h"
 #include "data/data_session.h"
@@ -99,6 +101,35 @@ LocalStore::LocalStore(not_null<Main::Session*> session)
 			return item->Has<HistoryServiceMembership>();
 		});
 	}, _lifetime);
+
+	for (const auto &key : FAMediaBlur::KindSettingKeys()) {
+		FASettings::JsonSettings::Events(
+			key
+		) | rpl::start_with_next([=](const QString &) {
+			refreshAllMedia();
+		}, _lifetime);
+	}
+	// Strength is read while painting and changes on every slider step,
+	// so a repaint is enough and a full refresh would be too heavy.
+	FASettings::JsonSettings::Events(
+		FAMediaBlur::StrengthSettingKey()
+	) | rpl::start_with_next([=](const QString &) {
+		_session->data().requestItemViewsRepaint(
+			FAMediaBlur::HasBlurrableMedia);
+	}, _lifetime);
+}
+
+void LocalStore::refreshAllMedia() const {
+	const auto owner = &_session->data();
+	owner->requestItemViewsRefresh(FAMediaBlur::HasBlurrableMedia);
+	owner->histories().enumerate([](not_null<History*> history) {
+		// Chat list previews cache their thumbnails until invalidated.
+		const auto item = history->chatListMessage();
+		if (item && FAMediaBlur::HasBlurrableMedia(item)) {
+			history->lastItemDialogsView().itemInvalidated(item);
+			history->updateChatListEntry();
+		}
+	});
 }
 
 bool LocalStore::isHidden(not_null<const HistoryItem*> item) const {

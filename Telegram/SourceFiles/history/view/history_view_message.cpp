@@ -1548,9 +1548,10 @@ void Message::draw(Painter &p, const PaintContext &context) const {
 		}
 	} else if (media && media->isDisplayed()) {
 		p.translate(g.topLeft());
-		FAMediaBlur::Paint(
+		FAMediaBlur::PaintKeepingOutside(
 			p,
 			QRect(0, 0, media->width(), media->height()),
+			QRect(-g.left(), -g.top(), width(), height()),
 			FAMediaBlur::IsBlurred(media, data()),
 			[&](Painter &q) {
 				media->draw(q, context.translated(
