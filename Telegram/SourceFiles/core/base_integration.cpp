@@ -1,0 +1,47 @@
+/*
+This file is part of FAgram Desktop,
+the unofficial desktop client based on Telegram Desktop.
+
+For license and copyright information please follow this link:
+https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
+*/
+#include "core/base_integration.h"
+
+#include "core/sandbox.h"
+#include "core/crash_reports.h"
+
+namespace Core {
+
+BaseIntegration::BaseIntegration(int argc, char *argv[])
+: Integration(argc, argv) {
+}
+
+void BaseIntegration::enterFromEventLoop(FnMut<void()> &&method) {
+	Core::Sandbox::Instance().customEnterFromEventLoop(
+		std::move(method));
+}
+
+bool BaseIntegration::logSkipDebug() {
+	return !Logs::DebugEnabled() && Logs::started();
+}
+
+void BaseIntegration::logMessageDebug(const QString &message) {
+	Logs::writeDebug(message);
+}
+
+void BaseIntegration::logMessage(const QString &message) {
+	Logs::writeMain(message);
+}
+
+void BaseIntegration::setCrashAnnotation(
+		const std::string &key,
+		const QString &value) {
+	CrashReports::SetAnnotation(key, value);
+}
+
+void BaseIntegration::logAssertionViolation(const QString &info) {
+	Logs::writeMain("Assertion Failed! " + info);
+	CrashReports::SetAnnotation("Assertion", info);
+}
+
+} // namespace Core
