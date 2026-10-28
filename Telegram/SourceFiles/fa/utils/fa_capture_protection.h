@@ -23,4 +23,7 @@ void Start();
 [[nodiscard]] bool Active();
 [[nodiscard]] rpl::producer<bool> ActiveValue();
 
+// Flips and saves the setting, returns the new state.
+bool Toggle();
+
 } // namespace FACaptureProtection

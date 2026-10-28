@@ -12,13 +12,19 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "fa/lang/fa_lang.h"
 
 #include "core/application.h"
+#include "lang_auto.h"
+#include "settings/settings_common.h"
 #include "ui/boxes/confirm_box.h"
+#include "ui/layers/generic_box.h"
 #include "ui/widgets/buttons.h"
 #include "ui/widgets/continuous_sliders.h"
+#include "ui/widgets/fields/input_field.h"
 #include "ui/widgets/labels.h"
 #include "ui/wrap/vertical_layout.h"
 #include "window/window_session_controller.h"
+#include "styles/style_layers.h"
 #include "styles/style_settings.h"
+#include "styles/style_widgets.h"
 
 namespace FASettings {
 namespace {
@@ -32,7 +38,14 @@ namespace {
 		FAlang::RplTranslate(langKey),
 		st::settingsButtonNoIcon
 	))->toggleOn(
-		rpl::single(JsonSettings::GetBool(option))
+		// Follows the changes made elsewhere, like by a shortcut.
+		rpl::single(
+			JsonSettings::GetBool(option)
+		) | rpl::then(
+			JsonSettings::Events(option) | rpl::map([=](const QString &) {
+				return JsonSettings::GetBool(option);
+			})
+		)
 	)->toggledValue(
 	) | rpl::filter([=](bool enabled) {
 		return (enabled != JsonSettings::GetBool(option));
@@ -111,6 +124,62 @@ void AddJsonSlider(
 			}
 		});
 	updateLabel(JsonSettings::GetInt(option));
+}
+
+void AddJsonKeySequence(
+		not_null<Ui::VerticalLayout*> container,
+		not_null<Window::SessionController*> controller,
+		const QString &langKey,
+		const QString &option,
+		KeySequenceDescriptor descriptor) {
+	const auto readable = descriptor.readable;
+	const auto valid = descriptor.valid;
+	auto label = rpl::single(
+		rpl::empty
+	) | rpl::then(
+		JsonSettings::Events(option) | rpl::to_empty
+	) | rpl::map([=] {
+		return readable(JsonSettings::GetString(option));
+	});
+	const auto about = descriptor.aboutLangKey;
+	Settings::AddButtonWithLabel(
+		container,
+		FAlang::RplTranslate(langKey),
+		std::move(label),
+		st::settingsButtonNoIcon
+	)->addClickHandler([=] {
+		controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+			box->setTitle(FAlang::RplTranslate(langKey));
+			const auto field = box->addRow(object_ptr<Ui::InputField>(
+				box,
+				st::defaultInputField,
+				FAlang::RplTranslate(u"fa_key_sequence_placeholder"_q),
+				JsonSettings::GetString(option)));
+			box->addRow(object_ptr<Ui::FlatLabel>(
+				box,
+				FAlang::RplTranslate(about),
+				st::boxDividerLabel));
+			box->setFocusCallback([=] {
+				field->setFocusFast();
+			});
+			const auto save = [=] {
+				const auto text = field->getLastText().trimmed();
+				if (!text.isEmpty() && !valid(text)) {
+					field->showError();
+					return;
+				}
+				JsonSettings::Set(option, text);
+				JsonSettings::Write();
+				box->closeBox();
+			};
+			field->submits(
+			) | rpl::start_with_next([=](Qt::KeyboardModifiers) {
+				save();
+			}, field->lifetime());
+			box->addButton(tr::lng_settings_save(), save);
+			box->addButton(tr::lng_cancel(), [=] { box->closeBox(); });
+		}));
+	});
 }
 
 } // namespace FASettings

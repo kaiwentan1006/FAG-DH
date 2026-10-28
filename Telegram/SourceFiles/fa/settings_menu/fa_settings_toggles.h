@@ -36,4 +36,18 @@ void AddJsonSlider(
 	Fn<QString(int)> label,
 	Fn<void(int)> changed = nullptr);
 
+struct KeySequenceDescriptor {
+	Fn<bool(const QString&)> valid;
+	Fn<QString(const QString&)> readable;
+	QString aboutLangKey;
+};
+
+// Row showing a key sequence option, a click opens a box to edit it.
+void AddJsonKeySequence(
+	not_null<Ui::VerticalLayout*> container,
+	not_null<Window::SessionController*> controller,
+	const QString &langKey,
+	const QString &option,
+	KeySequenceDescriptor descriptor);
+
 } // namespace FASettings

@@ -13,6 +13,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "fa/settings_menu/fa_settings_toggles.h"
 
 #include "fa/lang/fa_lang.h"
+#include "fa/utils/telegram_helpers.h"
 
 #include "lang_auto.h"
 #include "mainwindow.h"
@@ -61,7 +62,10 @@ namespace Settings {
 			st::settingsButton,
 			{ &st::menuIconClear }
 		)->setClickedCallback([=] {
-			Core::App().openLocalUrl("tg://fa/clean_debug_logs", {});
+			cleanDebugLogs();
+			controller->showToast(
+				FAlang::Translate(QString("fa_cleaned_debug_logs")),
+				1000);
 		});
 		
 		FASettings::AddJsonToggle(

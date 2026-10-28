@@ -47,7 +47,7 @@ auto FAgramData = FAgramDataState::Empty;
 }
 
 [[nodiscard]] QUrl FAgramApiUrl(const QString &path) {
-	auto base = FASettings::JsonSettings::GetString(u"fagram_api_url"_q);
+	auto base = FASettings::JsonSettings::GetString(u"fagram_badges_api_url"_q);
 	while (base.endsWith('/')) {
 		base.chop(1);
 	}
@@ -91,6 +91,10 @@ void fetchAndParseData(
 
 void initialize_fagram_data() {
 	if (FAgramData != FAgramDataState::Empty) {
+		return;
+	} else if (FASettings::JsonSettings::GetString(
+			u"fagram_badges_api_url"_q).trimmed().isEmpty()) {
+		FAgramData = FAgramDataState::Loaded;
 		return;
 	}
 	FAgramData = FAgramDataState::Loading;

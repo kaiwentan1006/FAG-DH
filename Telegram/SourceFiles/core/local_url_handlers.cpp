@@ -1657,22 +1657,6 @@ const std::vector<LocalUrlHandler> &LocalUrlHandlers() {
 			FAUrlHandlers::ResolveUser
 		},
 		{
-			u"^fa/clean_debug_logs/?(.+)?(#|$)"_q,
-			FAUrlHandlers::HandleCleanDebugLogs
-		},
-		{
-			u"^fa/switch_debug_logs/?(.+)?(#|$)"_q,
-			FAUrlHandlers::HandleSwitchDebugLogs
-		},
-		{
-			u"^fa/restart/?(.+)?(#|$)"_q,
-			FAUrlHandlers::HandleRestart
-		},
-		{
-			u"^fa/quit/?(.+)?(#|$)"_q,
-			FAUrlHandlers::HandleQuit
-		},
-		{
 			u"^fa/?(.+)?(#|$)"_q,
 			FAUrlHandlers::HandleSomeText
 		},

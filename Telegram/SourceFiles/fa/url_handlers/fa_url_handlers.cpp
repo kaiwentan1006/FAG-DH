@@ -59,20 +59,6 @@ bool HandleSomeText(
 	return true;
 }
 
-bool HandleCleanDebugLogs(
-	Window::SessionController *controller,
-	const Match &match,
-	const QVariant &context)
-{
-	if (!controller) {
-		return false;
-	}
-	controller->showToast(FAlang::Translate(QString("fa_cleaning_debug_logs")), 500);
-	cleanDebugLogs();
-	controller->showToast(FAlang::Translate(QString("fa_cleaned_debug_logs")), 1000);
-	return true;
-}
-
 bool HandleNothing(
 	Window::SessionController *controller,
 	const Match &match,
@@ -82,57 +68,6 @@ bool HandleNothing(
 		return false;
 	}
 	controller->showToast(FAlang::Translate(QString("fa_not_found")), 500);
-	return true;
-}
-
-bool HandleSwitchDebugLogs(
-	Window::SessionController *controller,
-	const Match &match,
-	const QVariant &context)
-{
-	if (!controller) {
-		return false;
-	}
-
-	bool debug_logs = FASettings::JsonSettings::GetBool("debug_logs");
-
-	FASettings::JsonSettings::Write();
-	FASettings::JsonSettings::Set("debug_logs", !debug_logs);
-	FASettings::JsonSettings::Write();
-
-	QString message = debug_logs 
-		? FAlang::Translate(QString("fa_debug_logs_off")) 
-		: FAlang::Translate(QString("fa_debug_logs_on"));
-	controller->showToast(message, 1000);
-
-	return true;
-}
-
-bool HandleRestart(
-	Window::SessionController *controller,
-	const Match &match,
-	const QVariant &context)
-{
-	if (!controller) {
-		return false;
-	}
-
-	Core::Restart();
-
-	return true;
-}
-
-bool HandleQuit(
-	Window::SessionController *controller,
-	const Match &match,
-	const QVariant &context)
-{
-	if (!controller) {
-		return false;
-	}
-
-	Core::Quit();
-
 	return true;
 }
 

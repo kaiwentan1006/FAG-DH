@@ -9,6 +9,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 
 #include "fa/lang/fa_lang.h"
 #include "fa/utils/fa_capture_protection.h"
+#include "fa/utils/fa_global_hotkeys.h"
+#include "fa/ui/fa_autoscroll.h"
 
 #include "data/data_abstract_structure.h"
 #include "data/data_channel.h"
@@ -272,6 +274,8 @@ void Application::run() {
 
 	// Before any window is created, so none of them is ever captured.
 	FACaptureProtection::Start();
+	FAGlobalHotkeys::Start();
+	FAAutoscroll::Start();
 
 	style::SetCustomFont(settings().customFontFamily());
 	style::internal::StartFonts();

@@ -315,6 +315,9 @@ public:
 	[[nodiscard]] bool isLocal() const {
 		return _flags & MessageFlag::Local;
 	}
+	[[nodiscard]] bool isUnsupportedMedia() const {
+		return _flags & MessageFlag::Legacy;
+	}
 	[[nodiscard]] bool isFakeAboutView() const {
 		return _flags & MessageFlag::FakeAboutView;
 	}

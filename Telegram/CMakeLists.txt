@@ -753,6 +753,8 @@ PRIVATE
     fa/utils/telegram_helpers.h
     fa/utils/fa_capture_protection.cpp
     fa/utils/fa_capture_protection.h
+    fa/utils/fa_global_hotkeys.cpp
+    fa/utils/fa_global_hotkeys.h
     fa/utils/fa_profile_values.cpp
     fa/utils/fa_profile_values.h
     fa/settings_menu/fa_settings_menu.cpp
@@ -767,14 +769,14 @@ PRIVATE
     fa/settings_menu/sections/fa_chats.h
     fa/settings_menu/sections/fa_appearance.cpp
     fa/settings_menu/sections/fa_appearance.h
-    fa/settings_menu/sections/fa_donate.cpp
-    fa/settings_menu/sections/fa_donate.h
     fa/settings_menu/sections/fa_logs.cpp
     fa/settings_menu/sections/fa_logs.h
     fa/url_handlers/fa_url_handlers.cpp
     fa/url_handlers/fa_url_handlers.h
     fa/lang/fa_lang.cpp
     fa/lang/fa_lang.h
+    fa/ui/fa_autoscroll.cpp
+    fa/ui/fa_autoscroll.h
     fa/ui/fa_media_blur.cpp
     fa/ui/fa_media_blur.h
     fa/ui/previews.cpp

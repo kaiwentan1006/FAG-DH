@@ -25,27 +25,7 @@ bool HandleSomeText(
 	const Match &match,
 	const QVariant &context);
 
-bool HandleCleanDebugLogs(
-	Window::SessionController *controller,
-	const Match &match,
-	const QVariant &context);
-
 bool HandleNothing(
-	Window::SessionController *controller,
-	const Match &match,
-	const QVariant &context);
-
-bool HandleSwitchDebugLogs(
-	Window::SessionController *controller,
-	const Match &match,
-	const QVariant &context);
-
-bool HandleRestart(
-	Window::SessionController *controller,
-	const Match &match,
-	const QVariant &context);
-
-bool HandleQuit(
 	Window::SessionController *controller,
 	const Match &match,
 	const QVariant &context);

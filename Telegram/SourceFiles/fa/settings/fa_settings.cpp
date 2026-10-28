@@ -140,7 +140,7 @@ const std::map<QString, Definition, std::greater<QString>> DefinitionMap {
 		.defaultValue = true, }},
 	{ "disable_ads", {
 		.type = SettingType::BoolSetting,
-		.defaultValue = false, }},
+		.defaultValue = true, }},
 	{ "show_start_token", {
 		.type = SettingType::BoolSetting,
 		.defaultValue = true, }},
@@ -200,9 +200,33 @@ const std::map<QString, Definition, std::greater<QString>> DefinitionMap {
 	{ "hide_membership_messages", {
 		.type = SettingType::BoolSetting,
 		.defaultValue = false, }},
+	{ "hide_unsupported_messages", {
+		.type = SettingType::BoolSetting,
+		.defaultValue = false, }},
 	{ "screen_capture_protection", {
 		.type = SettingType::BoolSetting,
 		.defaultValue = true, }},
+
+	//   Global shortcuts, QKeySequence portable text, empty turns off.
+	{ "toggle_window_hotkey", {
+		.type = SettingType::QStringSetting,
+		.defaultValue = u"shift+space"_q, }},
+	{ "toggle_screen_capture_protection_hotkey", {
+		.type = SettingType::QStringSetting,
+		.defaultValue = u"shift+alt+0"_q, }},
+
+	//   Middle button autoscroll
+	{ "middle_click_autoscroll", {
+		.type = SettingType::BoolSetting,
+		.defaultValue = true, }},
+	{ "middle_click_autoscroll_speed", {
+		.type = SettingType::IntSetting,
+		.defaultValue = 10,
+		.range = IntRange{ 1, 50 }, }},
+	{ "middle_click_autoscroll_dead_zone", {
+		.type = SettingType::IntSetting,
+		.defaultValue = 10,
+		.range = IntRange{ 0, 64 }, }},
 
 	//   Media blur
 	{ "blur_photos", {
@@ -222,10 +246,10 @@ const std::map<QString, Definition, std::greater<QString>> DefinitionMap {
 		.defaultValue = 12,
 		.range = IntRange{ 2, 32 }, }},
 
-	//   FAgram service
-	{ "fagram_api_url", {
+	//   FAgram service, empty keeps the client from contacting it.
+	{ "fagram_badges_api_url", {
 		.type = SettingType::QStringSetting,
-		.defaultValue = u"https://api.fagram.app"_q, }},
+		.defaultValue = QString(), }},
 	{ "fagram_api_timeout", {
 		.type = SettingType::IntSetting,
 		.defaultValue = 5000,

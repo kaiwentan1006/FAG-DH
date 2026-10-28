@@ -14,7 +14,6 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "fa/settings_menu/sections/fa_general.h"
 #include "fa/settings_menu/sections/fa_chats.h"
 #include "fa/settings_menu/sections/fa_appearance.h"
-#include "fa/settings_menu/sections/fa_donate.h"
 #include "fa/settings_menu/sections/fa_logs.h"
 
 #include "fa/lang/fa_lang.h"
@@ -112,20 +111,6 @@ namespace Settings {
     void FA::SetupOther(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller) {
     	AddSubsectionTitle(container, FAlang::RplTranslate(QString("fa_other")));
 
-		const auto addSection = [&](
-				rpl::producer<QString> label,
-				Type type,
-				IconDescriptor &&descriptor) {
-			AddButtonWithIcon(
-				container,
-				std::move(label),
-				st::settingsButton,
-				std::move(descriptor)
-			)->addClickHandler([=] {
-				showOther(type);
-			});
-		};
-
     	AddButtonWithLabel(
 			container,
 			FAlang::RplTranslate(QString("fa_dc_status")),
@@ -134,66 +119,6 @@ namespace Settings {
 			{ &st::menuIconStats }
 		)->setClickedCallback([=] {
 			Core::App().openLocalUrl("tg://resolve?domain=tgDC_status", {});
-		});
-
-    	addSection(
-			FAlang::RplTranslate(QString("fa_donate")),
-			FADonate::Id(),
-			{ &st::paymentsIconPaymentMethod });
-    }
-
-	void FA::SetupLinks(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller)
-    {
-    	AddSubsectionTitle(container, FAlang::RplTranslate(QString("fa_links")));
-    	
-	    AddButtonWithLabel(
-			container,
-			FAlang::RplTranslate(QString("fa_channel")),
-			rpl::single(QString("@FAgramClient")),
-			st::settingsButton,
-			{ &st::menuIconChannel }
-		)->setClickedCallback([=] {
-			Core::App().openLocalUrl("tg://resolve?domain=FAgramClient", {});
-		});
-
-    	AddButtonWithLabel(
-			container,
-			FAlang::RplTranslate(QString("fa_group")),
-			rpl::single(QString("@FAgram_Group")),
-			st::settingsButton,
-			{ &st::menuIconGroups }
-		)->setClickedCallback([=] {
-			Core::App().openLocalUrl("tg://resolve?domain=FAgram_Group", {});
-		});
-
-    	AddButtonWithLabel(
-			container,
-			FAlang::RplTranslate(QString("fa_beta")),
-			rpl::single(QString("@FAgramBeta")),
-			st::settingsButton,
-			{ &st::menuIconShowAll }
-		)->setClickedCallback([=] {
-			Core::App().openLocalUrl("tg://resolve?domain=FAgramBeta", {});
-		});
-
-    	AddButtonWithLabel(
-			container,
-			FAlang::RplTranslate(QString("fa_translation")),
-			rpl::single(QString("Crowdin")),
-			st::settingsButton,
-			{ &st::menuIconChatBubble }
-		)->setClickedCallback([=] {
-			UrlClickHandler::Open("https://crowdin.com/project/fagram");
-		});
-
-    	AddButtonWithLabel(
-			container,
-			FAlang::RplTranslate(QString("fa_source_code")),
-			rpl::single(QString("Github")),
-			st::settingsButton,
-			{ &st::menuIconDelete }
-		)->setClickedCallback([=] {
-			UrlClickHandler::Open("https://github.com/fajox1/fagramdesktop");
 		});
     }
 
@@ -222,7 +147,7 @@ namespace Settings {
 			st::settingsButton,
 			{ &st::menuIconSettings }
 		)->setClickedCallback([=] {
-			Core::App().openLocalUrl("tg://fa/restart", {});
+			Core::Restart();
 		});
 
     	AddButtonWithLabel(
@@ -232,7 +157,7 @@ namespace Settings {
 			st::settingsButton,
 			{ &st::menuIconSettings }
 		)->setClickedCallback([=] {
-			Core::App().openLocalUrl("tg://fa/quit", {});
+			Core::Quit();
 		});
     }
 
@@ -246,11 +171,6 @@ namespace Settings {
     	Ui::AddDivider(content);
     	Ui::AddSkip(content);
     	SetupOther(content, controller);
-
-		Ui::AddSkip(content);
-    	Ui::AddDivider(content);
-    	Ui::AddSkip(content);
-    	SetupLinks(content, controller);
 
 		Ui::AddSkip(content);
     	Ui::AddDivider(content);

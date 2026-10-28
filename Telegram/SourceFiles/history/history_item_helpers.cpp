@@ -7,6 +7,8 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 */
 #include "history/history_item_helpers.h"
 
+#include "fa/lang/fa_lang.h"
+
 #include "api/api_text_entities.h"
 #include "boxes/premium_preview_box.h"
 #include "calls/calls_instance.h"
@@ -1236,11 +1238,9 @@ void CheckReactionNotificationSchedule(
 }
 
 [[nodiscard]] TextWithEntities UnsupportedMessageText() {
-	const auto siteLink = u"https://t.me/FAgram_Group/11"_q;
 	auto result = TextWithEntities{
-		tr::lng_message_unsupported(tr::now, lt_link, siteLink).replace("Telegram", "FAgram")
+		FAlang::Translate(u"fa_message_unsupported"_q)
 	};
-	TextUtilities::ParseEntities(result, Ui::ItemTextNoMonoOptions().flags);
 	result.entities.push_front(
 		EntityInText(EntityType::Italic, 0, result.text.size()));
 	return result;

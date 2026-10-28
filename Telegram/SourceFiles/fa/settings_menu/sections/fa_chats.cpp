@@ -12,6 +12,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "fa/settings_menu/sections/fa_chats.h"
 #include "fa/settings_menu/fa_settings_toggles.h"
 #include "fa/data/fa_local_store.h"
+#include "fa/ui/fa_autoscroll.h"
 
 #include "fa/lang/fa_lang.h"
 
@@ -105,6 +106,30 @@ namespace Settings {
 			FAlang::RplTranslate(u"fa_media_blur_about"_q));
     }
 
+    void FAChats::SetupAutoscroll(not_null<Ui::VerticalLayout *> container) {
+		Ui::AddSkip(container);
+		Ui::AddSubsectionTitle(container, FAlang::RplTranslate(u"fa_autoscroll"_q));
+		FASettings::AddJsonToggle(
+			container,
+			u"fa_autoscroll_enabled"_q,
+			FAAutoscroll::EnabledSettingKey());
+		FASettings::AddJsonSlider(
+			container,
+			FAAutoscroll::SpeedSettingKey(),
+			[](int value) {
+				return FAlang::Translate(u"fa_autoscroll_speed"_q).arg(value);
+			});
+		FASettings::AddJsonSlider(
+			container,
+			FAAutoscroll::DeadZoneSettingKey(),
+			[](int value) {
+				return FAlang::Translate(u"fa_autoscroll_dead_zone"_q).arg(value);
+			});
+		Ui::AddDividerText(
+			container,
+			FAlang::RplTranslate(u"fa_autoscroll_about"_q));
+    }
+
     void FAChats::SetupHiddenMessages(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller) {
 		Ui::AddSkip(container);
 		Ui::AddSubsectionTitle(container, FAlang::RplTranslate(u"fa_hidden_messages"_q));
@@ -163,6 +188,10 @@ namespace Settings {
 			container,
 			u"fa_hide_membership_messages"_q,
 			u"hide_membership_messages"_q);
+		FASettings::AddJsonToggle(
+			container,
+			u"fa_hide_unsupported_messages"_q,
+			u"hide_unsupported_messages"_q);
 		Ui::AddSkip(container);
 		Ui::AddDividerText(
 			container,
@@ -173,6 +202,7 @@ namespace Settings {
 		Ui::AddSkip(container);
     	SetupChats(container, controller);
 		SetupMediaBlur(container);
+		SetupAutoscroll(container);
 		SetupHiddenMessages(container, controller);
     }
 

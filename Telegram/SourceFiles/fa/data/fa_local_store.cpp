@@ -41,6 +41,10 @@ using SendersSet = base::flat_set<std::pair<PeerId, PeerId>>;
 	return u"hide_membership_messages"_q;
 }
 
+[[nodiscard]] QString UnsupportedSettingKey() {
+	return u"hide_unsupported_messages"_q;
+}
+
 void WriteSet(QDataStream &stream, const IdsSet &ids) {
 	stream << quint32(ids.size());
 	for (const auto &id : ids) {
@@ -99,6 +103,15 @@ LocalStore::LocalStore(not_null<Main::Session*> session)
 		_session->data().requestItemViewsRefresh([](
 				not_null<const HistoryItem*> item) {
 			return item->Has<HistoryServiceMembership>();
+		});
+	}, _lifetime);
+
+	FASettings::JsonSettings::Events(
+		UnsupportedSettingKey()
+	) | rpl::start_with_next([=](const QString &) {
+		_session->data().requestItemViewsRefresh([](
+				not_null<const HistoryItem*> item) {
+			return item->isUnsupportedMedia();
 		});
 	}, _lifetime);
 
@@ -362,6 +375,9 @@ void LocalStore::repaintMedia(FullMsgId id) const {
 bool IsHiddenLocally(not_null<const HistoryItem*> item) {
 	if (item->Has<HistoryServiceMembership>()
 		&& FASettings::JsonSettings::GetBool(MembershipSettingKey())) {
+		return true;
+	} else if (item->isUnsupportedMedia()
+		&& FASettings::JsonSettings::GetBool(UnsupportedSettingKey())) {
 		return true;
 	}
 	return item->history()->session().faLocalStore().isHidden(item);

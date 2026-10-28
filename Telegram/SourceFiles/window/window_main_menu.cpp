@@ -384,10 +384,7 @@ MainMenu::MainMenu(
 
 	parentResized();
 
-	_telegram->setMarkedText(Ui::Text::Link(
-		u"FAgram Desktop"_q,
-		u"https://t.me/FAgramClient"_q));
-	_telegram->setLinksTrusted();
+	_telegram->setText(u"FAgram Desktop"_q);
 	_version->setMarkedText(
 		Ui::Text::Link(
 			tr::lng_settings_current_version(

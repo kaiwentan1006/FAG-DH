@@ -1064,8 +1064,8 @@ auto HtmlWriter::Wrap::pushMessage(
 			message.id,
 			dialog,
 			basePath,
-			"This message is not supported by this version "
-			"of FAgram Desktop. Please update the application in https://t.me/FAgram_Group/11.") };
+			"This message uses a newer Telegram feature "
+			"that this build can't display yet.") };
 	}
 
 	const auto wrapReplyToLink = [&](const QByteArray &text) {

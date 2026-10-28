@@ -146,4 +146,11 @@ rpl::producer<bool> ActiveValue() {
 	) | rpl::distinct_until_changed();
 }
 
+bool Toggle() {
+	const auto enabled = !FASettings::JsonSettings::GetBool(SettingKey());
+	FASettings::JsonSettings::Set(SettingKey(), enabled);
+	FASettings::JsonSettings::Write();
+	return Active();
+}
+
 } // namespace FACaptureProtection

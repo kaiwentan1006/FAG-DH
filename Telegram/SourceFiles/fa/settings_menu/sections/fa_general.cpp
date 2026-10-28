@@ -12,6 +12,7 @@ https://github.com/fajox1/fagramdesktop/blob/master/LEGAL
 #include "fa/settings_menu/sections/fa_general.h"
 #include "fa/settings_menu/fa_settings_toggles.h"
 #include "fa/utils/fa_capture_protection.h"
+#include "fa/utils/fa_global_hotkeys.h"
 
 #include "fa/lang/fa_lang.h"
 
@@ -96,10 +97,40 @@ namespace Settings {
 			FAlang::RplTranslate(QString("fa_screen_capture_protection_about")));
     }
 
+    void FAGeneral::SetupGlobalShortcuts(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller) {
+		if (!FAGlobalHotkeys::Supported()) {
+			return;
+		}
+		Ui::AddSkip(container);
+		Ui::AddSubsectionTitle(container, FAlang::RplTranslate(u"fa_global_shortcuts"_q));
+		const auto descriptor = FASettings::KeySequenceDescriptor{
+			.valid = FAGlobalHotkeys::IsValid,
+			.readable = FAGlobalHotkeys::ReadableText,
+			.aboutLangKey = u"fa_global_shortcut_edit_about"_q,
+		};
+		FASettings::AddJsonKeySequence(
+			container,
+			controller,
+			u"fa_global_shortcut_toggle_window"_q,
+			FAGlobalHotkeys::ToggleWindowSettingKey(),
+			descriptor);
+		FASettings::AddJsonKeySequence(
+			container,
+			controller,
+			u"fa_global_shortcut_toggle_capture_protection"_q,
+			FAGlobalHotkeys::ToggleCaptureProtectionSettingKey(),
+			descriptor);
+		Ui::AddSkip(container);
+		Ui::AddDividerText(
+			container,
+			FAlang::RplTranslate(u"fa_global_shortcuts_about"_q));
+    }
+
     void FAGeneral::SetupFAGeneral(not_null<Ui::VerticalLayout *> container, not_null<Window::SessionController *> controller) {
 		Ui::AddSkip(container);
     	SetupGeneral(container, controller);
     	SetupPrivacy(container);
+    	SetupGlobalShortcuts(container, controller);
     }
 
     void FAGeneral::setupContent(not_null<Window::SessionController *> controller) {
