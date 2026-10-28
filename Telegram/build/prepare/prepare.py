@@ -457,6 +457,7 @@ stage('patches', """
     git clone https://github.com/desktop-app/patches.git
     cd patches
     git checkout 1ffcb17817a2cab167061d530703842395291e69
+    git checkout a17d54b63128c83cb53bd71044119e77b3a2da02 -- libvpx/0006-fix-build-with-nasm.patch
 """)
 
 stage('msys64', """
