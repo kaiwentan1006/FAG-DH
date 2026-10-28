@@ -63,16 +63,16 @@ template <typename Scroll>
 }
 
 [[nodiscard]] std::optional<Target> FindTarget(QWidget *widget) {
+	auto messages = false;
 	for (auto w = widget; w; w = w->parentWidget()) {
+		messages = messages || IsMessageList(w);
 		if (const auto area = dynamic_cast<Ui::ScrollArea*>(w)) {
 			if (area->scrollTopMax() > 0) {
-				return MakeTarget<Ui::ScrollArea>(
-					area,
-					IsMessageList(area->widget()));
+				return MakeTarget<Ui::ScrollArea>(area, messages);
 			}
 		} else if (const auto elastic = dynamic_cast<Ui::ElasticScroll*>(w)) {
 			if (elastic->scrollTopMax() > 0) {
-				return MakeTarget<Ui::ElasticScroll>(elastic, false);
+				return MakeTarget<Ui::ElasticScroll>(elastic, messages);
 			}
 		}
 		if (w->isWindow()) {
